@@ -16,29 +16,12 @@
  *
  * Created by CuttleFish on 2020/7/3.
  */
-import com.github.jobop.gekko.GekkoCli;
-import com.github.jobop.gekko.core.GekkoConfig;
-import com.github.jobop.gekko.core.statemachine.StateMachineAdapter;
-import com.github.jobop.gekko.enums.StoreEnums;
+package com.github.jobop.gekko.core.statemachine;
+
+
 import com.github.jobop.gekko.protocols.message.GekkoEntry;
 
-public class Test {
-    public static void main(String[] args) {
-        GekkoConfig conf = GekkoConfig.builder()
-                .peer("127.0.0.1:8080").peerId("1")
-                .peer("127.0.0.1:9090").peerId("2")
-                .peer("127.0.0.1:7070").peerId("3")
-                .selfId("3")
-                .storeType(StoreEnums.FILE)
-                .stateMachine(new StateMachineAdapter() {
-                    @Override
-                    public void onAppend(GekkoEntry entry) {
-                        super.onAppend(entry);
-                    }
-                }).baseFilePath("cekko3").build();
 
-
-        GekkoCli cli=new GekkoCli(conf);
-        cli.start();
-    }
+public interface StateMachine {
+    public void onAppend(GekkoEntry entry);
 }

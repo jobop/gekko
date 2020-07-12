@@ -17,7 +17,7 @@
  * Created by CuttleFish on 2020/7/11.
  */
 
-import com.github.jobop.cekko.store.mmap.DefaultMMapFile;
+import com.github.jobop.gekko.store.mmap.DefaultMMapFile;
 import org.junit.Assert;
 import org.junit.Test;
 
