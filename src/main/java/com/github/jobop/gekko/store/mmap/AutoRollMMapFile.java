@@ -96,6 +96,7 @@ public class AutoRollMMapFile implements ComposeMMapFile {
         if (this.allFiles.size() > 0) {
             this.currentMMapFile = this.allFiles.get(this.allFiles.size() - 1);
         }
+        this.checksum();
     }
 
     @Override
