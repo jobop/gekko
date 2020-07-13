@@ -1,3 +1,4 @@
+
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -14,19 +15,33 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *
- * Created by CuttleFish on 2020/7/11.
+ * Created by CuttleFish on 2020/7/13.
  */
-package com.github.jobop.gekko.store.mmap;
+
+import com.github.jobop.gekko.store.mmap.AutoRollMMapFile;
+import com.github.jobop.gekko.store.mmap.SequenceFile;
+import org.apache.commons.io.FileUtils;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
+
+import java.io.File;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+
+public class BaseTest {
+    protected List<String> paths = new ArrayList<String>();
 
 
-public interface ComposeMMapFile extends SequenceFile {
-    void load();
-
-    boolean checksum();
-
-    SlicedByteBuffer selectMappedBuffer(long pos, int size);
-
-    SlicedByteBuffer selectMappedBuffer(long pos);
-
-
+    @After
+    public void clear() {
+        for (String path : paths) {
+            try {
+                FileUtils.forceDeleteOnExit(new File(path));
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+    }
 }

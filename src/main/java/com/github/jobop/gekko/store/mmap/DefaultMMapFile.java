@@ -81,7 +81,7 @@ public class DefaultMMapFile extends ShutdownableReferenceCountedResource implem
         try {
             this.fileChannel = new RandomAccessFile(file, "rw").getChannel();
         } catch (FileNotFoundException e) {
-            log.error("filename="+file.getName(), e);
+            log.error("filename=" + file.getName(), e);
             throw new GekkoException(e);
         }
     }
@@ -111,13 +111,13 @@ public class DefaultMMapFile extends ShutdownableReferenceCountedResource implem
         return this.appendMessage(data, 0, data.length);
     }
 
-    public long appendMessage(byte[] data, int offset, int length) {
+    public long appendMessage(byte[] data, long offset, int length) {
         return (Long) autoReleaseTemplate(x -> {
             int currentWrotePos = this.getWrotePosition();
             if (currentWrotePos + length <= this.getFileSize()) {
                 ByteBuffer byteBuffer = this.mappedByteBuffer.slice();
                 byteBuffer.position(currentWrotePos);
-                byteBuffer.put(data, offset, length);
+                byteBuffer.put(data, (int) offset, length);
                 this.wrotePos.addAndGet(length);
                 return Long.valueOf(currentWrotePos);
             } else {
@@ -223,7 +223,7 @@ public class DefaultMMapFile extends ShutdownableReferenceCountedResource implem
     }
 
 
-    public long transferTo(int pos, int length, WritableByteChannel target) {
+    public long transferTo(long pos, int length, WritableByteChannel target) {
         return (Long) this.autoReleaseTemplate(x -> {
             try {
                 return this.fileChannel.transferTo(pos, length, target);
@@ -266,7 +266,8 @@ public class DefaultMMapFile extends ShutdownableReferenceCountedResource implem
 
     }
 
-    public int getData(int pos, int size, byte[] dest) {
+
+    public int getData(long pos, int size, byte[] dest) {
         if (null == dest || dest.length < size) {
             log.warn("not enough size to load the data");
             return -1;
@@ -292,14 +293,15 @@ public class DefaultMMapFile extends ShutdownableReferenceCountedResource implem
 
     }
 
-    private ByteBuffer sliceByteBuffer(int pos, int size) {
+
+    private ByteBuffer sliceByteBuffer(long pos, int size) {
         if (pos + size > this.getWrotePosition()) {
             log.warn("the pos+size>wrotePosition, request pos: " + pos + ", size: " + size
                     + ", wrotePosition: " + this.getWrotePosition());
             return null;
         }
         ByteBuffer srcByteBuffer = this.mappedByteBuffer.slice();
-        srcByteBuffer.position(pos);
+        srcByteBuffer.position((int) pos);
         ByteBuffer newByteBuffer = srcByteBuffer.slice();
         newByteBuffer.limit(size);
         return newByteBuffer;

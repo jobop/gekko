@@ -183,5 +183,5 @@ public interface MmapFile extends SequenceFile {
     void setWrotePosition(int wrotePosition);
 
 
-    long transferTo(int pos, int length, WritableByteChannel target);
+    long transferTo(long pos, int length, WritableByteChannel target);
 }

@@ -19,8 +19,8 @@
 package com.github.jobop.gekko.store.mmap;
 
 
-import com.github.jobop.gekko.utils.BytesUtil;
 import com.github.jobop.gekko.utils.FileUtils;
+import lombok.extern.slf4j.Slf4j;
 
 import java.io.File;
 import java.io.FilenameFilter;
@@ -31,7 +31,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Pattern;
 
-
+@Slf4j
 public class AutoRollMMapFile implements ComposeMMapFile {
 
     private com.github.jobop.gekko.store.mmap.MmapFile currentMMapFile;
@@ -118,6 +118,7 @@ public class AutoRollMMapFile implements ComposeMMapFile {
         return true;
     }
 
+
     public long appendMessage(byte[] data) {
         return this.appendMessage(data, 0, data.length);
     }
@@ -127,14 +128,14 @@ public class AutoRollMMapFile implements ComposeMMapFile {
     }
 
     public long allocPos(byte[] data, int offset, int length) {
-        MmapFile mmapFile = chooseMMapFile(this.currentMMapFile, length);
+        MmapFile mmapFile = chooseMMapFileToWrite(this.currentMMapFile, length);
         if (null == mmapFile) {
             return -1;
         }
         return mmapFile.getFileFromOffset() + mmapFile.getWrotePosition();
     }
 
-    public long appendMessage(byte[] data, int offset, int length) {
+    public long appendMessage(byte[] data, long offset, int length) {
         this.allocPos(data, 0, data.length);
         long pos = this.currentMMapFile.getFileFromOffset() + this.currentMMapFile.getWrotePosition();
         if (-1 == this.currentMMapFile.appendMessage(data, offset, length)) {
@@ -144,11 +145,64 @@ public class AutoRollMMapFile implements ComposeMMapFile {
     }
 
     @Override
-    public int getData(int pos, int size, byte[] dest) {
-        return 0;
+    public int getData(long pos, int size, byte[] dest) {
+        SlicedByteBuffer slicedByteBuffer = this.selectMappedBuffer(pos, size);
+        if (null == slicedByteBuffer) {
+            return -1;
+        }
+        int readedSize = 0;
+        if (size == -1) {
+            slicedByteBuffer.get(dest);
+            readedSize = dest.length;
+        } else {
+            slicedByteBuffer.get(dest, 0, size);
+            readedSize = size;
+        }
+
+        slicedByteBuffer.release();
+        return readedSize;
     }
 
-    private MmapFile chooseMMapFile(MmapFile currentMMapFile, int length) {
+
+    @Override
+    public SlicedByteBuffer selectMappedBuffer(long pos, int size) {
+
+        MmapFile file = chooseMMapFileToRead(pos);
+        if (null == file) {
+            return null;
+        }
+        int posInFile = (int) (pos % this.singleFileSize);
+        if (posInFile > file.getWrotePosition()) {
+            log.warn("the posInFile overflow posInFile=" + posInFile + " and filewrotepos=" + file.getWrotePosition());
+            return null;
+        }
+        SlicedByteBuffer slicedByteBuffer;
+        if (size == -1) {
+            slicedByteBuffer = file.selectMappedBuffer(posInFile);
+        } else {
+            slicedByteBuffer = file.selectMappedBuffer(posInFile, size);
+        }
+
+        return slicedByteBuffer;
+    }
+
+    @Override
+    public SlicedByteBuffer selectMappedBuffer(long pos) {
+        return this.selectMappedBuffer(pos, -1);
+    }
+
+    private MmapFile chooseMMapFileToRead(long pos) {
+        //calac the pos belong to which file
+        int fileIndex = (int) pos / this.singleFileSize;
+        if (fileIndex > this.allFiles.size()) {
+            log.warn("the ops overflow ops=" + pos + " and filelist size=" + this.allFiles.size());
+            return null;
+        }
+        MmapFile file = this.allFiles.get(fileIndex);
+        return file;
+    }
+
+    private MmapFile chooseMMapFileToWrite(MmapFile currentMMapFile, int length) {
         if (null != currentMMapFile && !currentMMapFile.isFull()) {
             if (currentMMapFile.getFileSize() - currentMMapFile.getWrotePosition() >= length + BLANK_THRESHOLD) {
                 return currentMMapFile;

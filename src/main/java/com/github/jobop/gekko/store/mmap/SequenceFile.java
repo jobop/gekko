@@ -20,9 +20,29 @@ package com.github.jobop.gekko.store.mmap;
 
 
 public interface SequenceFile {
+    /**
+     * append all bytes in the data to the file
+     * @param data
+     * @return
+     */
     long appendMessage(byte[] data);
 
-    long appendMessage(byte[] data, int offset, int length);
+    /**
+     * append bytes from offset to offset+length in the data to the file
+     *
+     * @param data
+     * @param offset
+     * @param length
+     * @return
+     */
+    long appendMessage(byte[] data, long offset, int length);
 
-    int getData(int pos, int size, byte[] dest);
+    /**
+     * get bytes which form pos to size in the file to the dest
+     * @param pos
+     * @param size
+     * @param dest
+     * @return
+     */
+    int getData(long pos, int size, byte[] dest);
 }
