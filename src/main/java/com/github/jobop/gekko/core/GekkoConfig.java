@@ -47,5 +47,7 @@ public class GekkoConfig {
 
     int flushInterval = 1;
 
+    int indexCountPerFile=100000;
+
 
 }

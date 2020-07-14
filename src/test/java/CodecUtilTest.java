@@ -34,9 +34,9 @@ public class CodecUtilTest {
         entry.setChecksum(entry.checksum());
 
         ByteBuffer bb = ByteBuffer.allocate(1024 * 1024);
-        CodecUtils.encode(entry, bb);
+        CodecUtils.encodeData(entry, bb);
 
-        GekkoEntry entry2 = CodecUtils.decode(bb);
+        GekkoEntry entry2 = CodecUtils.decodeData(bb);
 
         System.out.println(entry2.getMagic());
         System.out.println(new String(entry2.getData()));

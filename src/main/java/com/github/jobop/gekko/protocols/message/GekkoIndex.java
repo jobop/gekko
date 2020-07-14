@@ -1,3 +1,4 @@
+
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -14,27 +15,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *
- * Created by CuttleFish on 2020/7/2.
+ * Created by CuttleFish on 2020/7/14.
  */
-package com.github.jobop.gekko.store;
 
+package com.github.jobop.gekko.protocols.message;
 
-import com.github.jobop.gekko.core.lifecycle.LifeCycle;
-import com.github.jobop.gekko.protocols.message.GekkoEntry;
+import lombok.Builder;
+import lombok.Data;
 
-import java.util.List;
-
-
-public interface Store extends LifeCycle {
-    public void append(GekkoEntry entry);
-
-    public List<GekkoEntry> batchGet(long fromPos, long toPos);
-
-    public GekkoEntry get(long offset, long length);
-
-    public GekkoEntry getByIndex(long index);
-
-    public List<GekkoEntry> batchGetByIndex(long fromIndex, long toIndex);
-
-
+@Data
+@Builder
+public class GekkoIndex {
+    public static int INDEX_SIZE = 8 + 8 + 4;
+    long dataPos;
+    long dataIndex;
+    int dataSize;
 }

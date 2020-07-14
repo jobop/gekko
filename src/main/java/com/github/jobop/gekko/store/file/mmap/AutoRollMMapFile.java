@@ -51,7 +51,7 @@ public class AutoRollMMapFile implements ComposeMMapFile, SequenceFile, SlicedAb
     private int singleFileSize = 1024 * 1024 * 40;
     private int osPageSize = 1024 * 4;
     private static final byte[] EOF = new byte[]{0xC, 0xA, 0xF, 0xE, 0xD, 0xA, 0xD, 0xD};
-    private static int BLANK_THRESHOLD = 8;
+    private static int BLANK_THRESHOLD = 0;
     private AtomicInteger hasLoad = new AtomicInteger(0);
 
     public AutoRollMMapFile(String storePath, int singleFileSize, int osPageSize) {

@@ -59,4 +59,14 @@ public  class AbstractStore extends LifeCycleAdpter implements com.github.jobop.
     public GekkoEntry get(long offset, long length) {
         return null;
     }
+
+    @Override
+    public GekkoEntry getByIndex(long index) {
+        return null;
+    }
+
+    @Override
+    public List<GekkoEntry> batchGetByIndex(long fromIndex, long toIndex) {
+        return null;
+    }
 }

@@ -20,10 +20,12 @@ package com.github.jobop.gekko.store;
 
 import com.github.jobop.gekko.core.GekkoConfig;
 import com.github.jobop.gekko.protocols.message.GekkoEntry;
+import com.github.jobop.gekko.protocols.message.GekkoIndex;
 import com.github.jobop.gekko.store.file.mmap.AutoRollMMapFile;
 import com.github.jobop.gekko.store.file.mmap.SlicedByteBuffer;
 import com.github.jobop.gekko.utils.CodecUtils;
 import com.github.jobop.gekko.utils.NotifyableThread;
+import com.github.jobop.gekko.utils.SlicedByteBufferUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
 
@@ -43,8 +45,12 @@ public class FileStore extends AbstractStore {
 
     private Thread fileFlushThread;
 
-    private ThreadLocal<ByteBuffer> localBuffer = ThreadLocal.withInitial(() -> {
+
+    private ThreadLocal<ByteBuffer> localDataBuffer = ThreadLocal.withInitial(() -> {
         return ByteBuffer.allocate(1024 * 1024);
+    });
+    private ThreadLocal<ByteBuffer> localIndexBuffer = ThreadLocal.withInitial(() -> {
+        return ByteBuffer.allocate(GekkoIndex.INDEX_SIZE * 1024);
     });
 
     public FileStore(GekkoConfig conf) {
@@ -61,7 +67,7 @@ public class FileStore extends AbstractStore {
             log.error("", e);
         }
         dataFile = new AutoRollMMapFile(BASE_FILE_PATH + File.separator + "data", conf.getStoreFileSize(), conf.getOsPageSize());
-        indexFile = new AutoRollMMapFile(BASE_FILE_PATH + File.separator + "index", conf.getStoreFileSize(), conf.getOsPageSize());
+        indexFile = new AutoRollMMapFile(BASE_FILE_PATH + File.separator + "index", GekkoIndex.INDEX_SIZE * conf.getIndexCountPerFile(), conf.getOsPageSize());
         dataFile.load();
         indexFile.load();
 
@@ -84,43 +90,102 @@ public class FileStore extends AbstractStore {
     public void append(GekkoEntry entry) {
         //FIXME:
         synchronized (this) {
-
             //set pos
             long pos = dataFile.allocPos(entry.getTotalSize());
             entry.setPos(pos);
 
+            //set index
+            long dataIndex = indexFile.getMaxOffset() / GekkoIndex.INDEX_SIZE;
+            entry.setEntryIndex(dataIndex);
+            //TODO:set term
             //after set attributes,set cheksum
             entry.computSizeInBytes();
             entry.setChecksum(entry.checksum());
-            //TODO:set term
-            CodecUtils.encode(entry, localBuffer.get());
 
-            byte[] bytes=new byte[localBuffer.get().remaining()];
-            localBuffer.get().get(bytes);
-            dataFile.appendMessage(bytes);
-
+            //save data
+            saveData(entry);
+            //save index
+            GekkoIndex index = GekkoIndex.builder().dataPos(pos).dataIndex(dataIndex).dataSize(entry.getTotalSize()).build();
+            saveIndex(index);
         }
 
     }
 
-    @Override
-    public List<GekkoEntry> batchGet(long offset, long toOffset) {
-        List<GekkoEntry> entries = null;
-        List<SlicedByteBuffer> slicedByteBuffers = dataFile.selectMutilBufferToRead(offset, (int) toOffset);
-        if (null == slicedByteBuffers || slicedByteBuffers.isEmpty()) {
-            return null;
-        }
-        List<ByteBuffer> byteBuffers = slicedByteBuffers.stream().map(bb -> {
-            return bb.getByteBuffer();
-        }).collect(Collectors.toList());
 
-        entries = CodecUtils.decodeToList(byteBuffers);
-        return entries;
+    @Override
+    public List<GekkoEntry> batchGet(long fromPos, long toPos) {
+        List<GekkoEntry> entries = null;
+        List<SlicedByteBuffer> slicedByteBuffers = null;
+        try {
+            slicedByteBuffers = dataFile.selectMutilBufferToRead(fromPos, (int) toPos);
+            if (null == slicedByteBuffers || slicedByteBuffers.isEmpty()) {
+                return null;
+            }
+            List<ByteBuffer> byteBuffers = slicedByteBuffers.stream().map(bb -> {
+                return bb.getByteBuffer();
+            }).collect(Collectors.toList());
+
+            entries = CodecUtils.decodeToDataList(byteBuffers);
+            return entries;
+        } finally {
+            SlicedByteBufferUtils.safeRelease(slicedByteBuffers);
+        }
+
     }
 
     @Override
     public GekkoEntry get(long offset, long length) {
-        SlicedByteBuffer slicedByteBuffer = dataFile.selectMappedBuffer(offset, (int) length);
-        return CodecUtils.decode(slicedByteBuffer.getByteBuffer());
+        SlicedByteBuffer slicedByteBuffer = null;
+        try {
+            slicedByteBuffer = dataFile.selectMappedBuffer(offset, (int) length);
+            return CodecUtils.decodeData(slicedByteBuffer.getByteBuffer());
+        } finally {
+            SlicedByteBufferUtils.safeRelease(slicedByteBuffer);
+        }
+
+    }
+
+    @Override
+    public GekkoEntry getByIndex(long dataIndex) {
+        GekkoIndex index = getGekkoIndex(dataIndex);
+        if (index == null) return null;
+        return this.get(index.getDataPos(), index.getDataSize());
+
+    }
+
+    private GekkoIndex getGekkoIndex(long dataIndex) {
+        SlicedByteBuffer indexslicedByteBuffer = null;
+        GekkoIndex index = null;
+        try {
+            indexslicedByteBuffer = indexFile.selectMappedBuffer(dataIndex * GekkoIndex.INDEX_SIZE, GekkoIndex.INDEX_SIZE);
+            index = CodecUtils.decodeIndex(indexslicedByteBuffer.getByteBuffer());
+        } finally {
+            SlicedByteBufferUtils.safeRelease(indexslicedByteBuffer);
+        }
+        if (null == index) {
+            return null;
+        }
+        return index;
+    }
+
+    @Override
+    public List<GekkoEntry> batchGetByIndex(long fromIndex, long toIndex) {
+        GekkoIndex fromGekkoIndex = getGekkoIndex(fromIndex);
+        GekkoIndex toGekkoIndex = getGekkoIndex(toIndex);
+        return this.batchGet(fromGekkoIndex.getDataPos(), toGekkoIndex.getDataPos());
+    }
+
+    private void saveIndex(GekkoIndex index) {
+        CodecUtils.encodeIndex(index, localIndexBuffer.get());
+        byte[] indexbytes = new byte[localIndexBuffer.get().remaining()];
+        localIndexBuffer.get().get(indexbytes);
+        long indexPos = indexFile.appendMessage(indexbytes);
+    }
+
+    private void saveData(GekkoEntry entry) {
+        CodecUtils.encodeData(entry, localDataBuffer.get());
+        byte[] bytes = new byte[localDataBuffer.get().remaining()];
+        localDataBuffer.get().get(bytes);
+        dataFile.appendMessage(bytes);
     }
 }

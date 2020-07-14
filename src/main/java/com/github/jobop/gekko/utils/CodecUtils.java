@@ -20,7 +20,7 @@ package com.github.jobop.gekko.utils;
 
 
 import com.github.jobop.gekko.protocols.message.GekkoEntry;
-import com.github.jobop.gekko.store.file.mmap.SlicedByteBuffer;
+import com.github.jobop.gekko.protocols.message.GekkoIndex;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
@@ -28,7 +28,7 @@ import java.util.List;
 
 
 public class CodecUtils {
-    public static void encode(GekkoEntry entry, ByteBuffer bb) {
+    public static void encodeData(GekkoEntry entry, ByteBuffer bb) {
         bb.clear();
         int bodySize = bb.array().length;
         bb.putInt(entry.getTotalSize());//totalsize
@@ -56,18 +56,18 @@ public class CodecUtils {
 //        return entries;
 //    }
 
-    public static List<GekkoEntry> decodeToList(List<ByteBuffer> bbs) {
+    public static List<GekkoEntry> decodeToDataList(List<ByteBuffer> bbs) {
         List<GekkoEntry> entries = new ArrayList<GekkoEntry>();
         for (ByteBuffer bb : bbs) {
             while (bb.hasRemaining()) {
-                GekkoEntry entry = decode(bb);
+                GekkoEntry entry = decodeData(bb);
                 entries.add(entry);
             }
         }
         return entries;
     }
 
-    public static GekkoEntry decode(ByteBuffer bb) {
+    public static GekkoEntry decodeData(ByteBuffer bb) {
         int totalsize = bb.getInt();
         int magic = bb.getInt();
         long term = bb.getLong();
@@ -80,5 +80,33 @@ public class CodecUtils {
         GekkoEntry entry = GekkoEntry.builder().totalSize(totalsize).magic(magic).term(term).entryIndex(entryIndex).pos(pos)
                 .checksum(checksum).data(data).build();
         return entry;
+    }
+
+
+    public static void encodeIndex(GekkoIndex index, ByteBuffer bb) {
+        bb.clear();
+        bb.putLong(index.getDataPos());
+        bb.putLong(index.getDataIndex());
+        bb.putInt(index.getDataSize());
+        bb.flip();
+    }
+
+
+    public static GekkoIndex decodeIndex(ByteBuffer bb) {
+        long pos = bb.getLong();
+        long index = bb.getLong();
+        int size = bb.getInt();
+        return GekkoIndex.builder().dataPos(pos).dataIndex(index).dataSize(size).build();
+    }
+
+    public static List<GekkoIndex> decodeToIndexList(List<ByteBuffer> bbs) {
+        List<GekkoIndex> entries = new ArrayList<GekkoIndex>();
+        for (ByteBuffer bb : bbs) {
+            while (bb.hasRemaining()) {
+                GekkoIndex index = decodeIndex(bb);
+                entries.add(index);
+            }
+        }
+        return entries;
     }
 }

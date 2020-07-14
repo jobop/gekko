@@ -34,22 +34,23 @@ public class FileStoreTest extends BaseTest {
     public void testAppendAndBatchGet() {
         String dirPath = "/Users/zhengwei/Desktop/autorollfiles";
         this.paths.add(dirPath);
-        GekkoConfig conf = GekkoConfig.builder().baseFilePath(dirPath).storeType(StoreEnums.FILE).flushInterval(1).storeFileSize(1024 * 1024).osPageSize(1024 * 4).build();
+        GekkoConfig conf = GekkoConfig.builder().baseFilePath(dirPath).storeType(StoreEnums.FILE).flushInterval(1).storeFileSize(1024 * 1024).indexCountPerFile(100000).osPageSize(1024 * 4).build();
         Store store = new FileStore(conf);
         store.init();
         store.start();
         String appendStr = "1sdfasdfasdfasdfasdfasdfasdfadf54545fasdfasdfasdfasdfasdfasdfadfa53345dfasdfasdfasdfasdfasdfasdfad9081nvsdfasdfasdfasdfasdfasdfadfasdfasdfasdfasdfasdfasdfasdfadfasdfasdfasdfasdfasdfasdfasdfad2";
         byte[] bytes = appendStr.getBytes();
-        GekkoEntry entry = GekkoEntry.builder().magic(0xCAFEDADD).term(123).pos(99).entryIndex(11).data(bytes).build();
+        GekkoEntry entry = GekkoEntry.builder().magic(0xCAFEDADD).term(123).data(bytes).build();
         entry.computSizeInBytes();
         long pos_66666 = 0;
         long pos_99999 = 0;
-        for (int i = 0; i < 100000; i++) {
+        for (int i = 0; i < 100001; i++) {
             store.append(entry);
 
             if (i == 66666) {
                 System.out.println(entry.getPos());
                 pos_66666 = entry.getPos();
+                System.out.println("pos_66666 index=" + entry.getEntryIndex());
             }
             if (i == 99999) {
                 System.out.println(entry.getPos());
@@ -60,21 +61,41 @@ public class FileStoreTest extends BaseTest {
         Assert.assertTrue((pos_99999 - pos_66666) > 1024 * 1024);
 
         //test get
-        GekkoEntry ent = store.get(pos_66666, entry.getTotalSize());
-        Assert.assertTrue(ent.isIntact());
+        GekkoEntry ent666 = store.get(pos_66666, entry.getTotalSize());
+        Assert.assertTrue(ent666.isIntact());
 
         //test batchget
         long startTime = System.currentTimeMillis();
         List<GekkoEntry> entryList = store.batchGet(pos_66666, pos_99999);
 
-        GekkoEntry lastEntry = entryList.get(entryList.size() - 1);
+        GekkoEntry lastEntry1 = entryList.get(entryList.size() - 1);
 
         System.out.println("get 33333 entris costs " + (System.currentTimeMillis() - startTime) + "ms");
         for (GekkoEntry e : entryList) {
             Assert.assertTrue(e.isIntact());
         }
-        Assert.assertEquals(pos_99999, lastEntry.getPos() + entry.getTotalSize());
+        Assert.assertEquals(pos_99999, lastEntry1.getPos() + entry.getTotalSize());
         Assert.assertEquals(99999 - 66666, entryList.size());
+
+
+        //test getByIndex
+        GekkoEntry _ent666 = store.getByIndex(66666);
+        Assert.assertTrue(_ent666.isIntact());
+        Assert.assertEquals(ent666.checksum(), _ent666.checksum());
+
+
+        //test batchGetByIndex
+        List<GekkoEntry> batchGetByIndexEntries = store.batchGetByIndex(66666, 99999);
+        GekkoEntry lastEntry2 = batchGetByIndexEntries.get(batchGetByIndexEntries.size() - 1);
+        Assert.assertEquals(pos_99999, lastEntry2.getPos() + entry.getTotalSize());
+        Assert.assertEquals(99999 - 66666, batchGetByIndexEntries.size());
+
+        for (int i = 0; i < batchGetByIndexEntries.size(); i++) {
+            GekkoEntry e1 = entryList.get(i);
+            GekkoEntry e2 = batchGetByIndexEntries.get(i);
+            Assert.assertTrue(e2.isIntact());
+            Assert.assertEquals(e1.checksum(), e2.checksum());
+        }
     }
 
 }
