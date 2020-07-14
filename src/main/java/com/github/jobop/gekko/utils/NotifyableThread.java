@@ -34,7 +34,7 @@ public abstract class NotifyableThread extends Thread {
     private int interval;
     private volatile AtomicBoolean shutdowned = new AtomicBoolean(false);
     /**
-     * 1、avoid to hasNotified more then twice
+     * 1、avoid to hasNotify more then twice
      * 2、when the dowork method run too long ，and the shutdown method has trigger，it can return immediately without waiting
      */
     protected volatile AtomicBoolean hasNotified = new AtomicBoolean(false);

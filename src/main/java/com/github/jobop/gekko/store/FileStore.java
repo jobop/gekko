@@ -43,7 +43,7 @@ public class FileStore extends AbstractStore {
     private AutoRollMMapFile dataFile;
     private AutoRollMMapFile indexFile;
 
-    private Thread fileFlushThread;
+    private NotifyableThread fileFlushThread;
 
 
     private ThreadLocal<ByteBuffer> localDataBuffer = ThreadLocal.withInitial(() -> {
@@ -84,6 +84,11 @@ public class FileStore extends AbstractStore {
     @Override
     public void start() {
         this.fileFlushThread.start();
+    }
+
+    @Override
+    public void shutdown() {
+        this.fileFlushThread.shutdown();
     }
 
     @Override
