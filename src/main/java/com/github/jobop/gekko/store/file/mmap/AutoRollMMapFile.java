@@ -188,39 +188,35 @@ public class AutoRollMMapFile implements ComposeMMapFile, SequenceFile, SlicedAb
         long size = toPos - fromPos;
         List<SlicedByteBuffer> buffers = new ArrayList<SlicedByteBuffer>();
         //calac the pos belong to which file
-        int pretFileIndex = (int) fromPos / this.singleFileSize;
-        int pretPosInFile = (int) (fromPos % this.singleFileSize);
+        int fileIndex = (int) fromPos / this.singleFileSize;
+        //calac the pos in the file
+        int posInFile = (int) (fromPos % this.singleFileSize);
 
-        long hasSelectedSize = 0;
+        long willSelectedSize = 0;
         do {
-            if (pretFileIndex > this.allFiles.size() - 1) {
+            if (fileIndex > this.allFiles.size() - 1) {
                 log.warn("the ops overflow ops=" + fromPos + " and filelist size=" + this.allFiles.size());
                 return null;
             }
-            MmapFile preFile = this.allFiles.get(pretFileIndex);
+            MmapFile file = this.allFiles.get(fileIndex);
+            long fileCanSelectSize = file.getWrotePosition() - posInFile;
+            willSelectedSize = fileCanSelectSize + willSelectedSize;
+            long remainingToselectSize = size - willSelectedSize;
+            long fileCanReadSize = file.getLimit() - posInFile;
 
-            long preFileSelectedRemaining = preFile.getWrotePosition() - pretPosInFile;
-            hasSelectedSize = preFileSelectedRemaining + hasSelectedSize;
-
-            long remainingToselect = size - hasSelectedSize;
-
-            long preFileReadRemaining = preFile.getLimit() - pretPosInFile;
-
-            if (preFile.getFileFromOffset() + preFile.getFileSize() >= toPos) {
-                if (remainingToselect < 0) {
-                    buffers.add(preFile.selectMappedBuffer(pretPosInFile, (int) (preFileSelectedRemaining + remainingToselect)));
+            if (file.getFileFromOffset() + file.getFileSize() >= toPos) {
+                if (remainingToselectSize < 0) {
+                    buffers.add(file.selectMappedBuffer(posInFile, (int) (fileCanSelectSize + remainingToselectSize)));
                 } else {
-                    buffers.add(preFile.selectMappedBuffer(pretPosInFile, (int) remainingToselect));
+                    buffers.add(file.selectMappedBuffer(posInFile, (int) remainingToselectSize));
                 }
                 break;
             } else {
-                buffers.add(preFile.selectMappedBuffer(pretPosInFile, (int) preFileReadRemaining));
+                buffers.add(file.selectMappedBuffer(posInFile, (int) fileCanReadSize));
             }
-            ++pretFileIndex;
-            pretPosInFile = 0;
+            ++fileIndex;
+            posInFile = 0;
         } while (true);
-
-
         return buffers;
     }
 

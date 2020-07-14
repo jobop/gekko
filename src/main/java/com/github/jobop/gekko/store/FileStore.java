@@ -85,7 +85,6 @@ public class FileStore extends AbstractStore {
         //FIXME:
         synchronized (this) {
 
-            //TODO:
             //set pos
             long pos = dataFile.allocPos(entry.getTotalSize());
             entry.setPos(pos);
@@ -93,7 +92,7 @@ public class FileStore extends AbstractStore {
             //after set attributes,set cheksum
             entry.computSizeInBytes();
             entry.setChecksum(entry.checksum());
-            //set term
+            //TODO:set term
             CodecUtils.encode(entry, localBuffer.get());
 
             byte[] bytes=new byte[localBuffer.get().remaining()];

@@ -59,7 +59,6 @@ public class CodecUtils {
     public static List<GekkoEntry> decodeToList(List<ByteBuffer> bbs) {
         List<GekkoEntry> entries = new ArrayList<GekkoEntry>();
         for (ByteBuffer bb : bbs) {
-            System.out.println("###" + bb.remaining());
             while (bb.hasRemaining()) {
                 GekkoEntry entry = decode(bb);
                 entries.add(entry);
