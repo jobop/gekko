@@ -25,7 +25,7 @@ import com.github.jobop.gekko.protocols.message.GekkoEntry;
 import java.util.List;
 
 
-public class AbstractStore extends LifeCycleAdpter implements com.github.jobop.gekko.store.Store {
+public  class AbstractStore extends LifeCycleAdpter implements com.github.jobop.gekko.store.Store {
     protected GekkoConfig conf;
 
     public AbstractStore(GekkoConfig conf) {
@@ -51,7 +51,12 @@ public class AbstractStore extends LifeCycleAdpter implements com.github.jobop.g
 
     }
 
-    public List<GekkoEntry> get(long offset, long length) {
+    public List<GekkoEntry> batchGet(long offset, long length) {
+        return null;
+    }
+
+    @Override
+    public GekkoEntry get(long offset, long length) {
         return null;
     }
 }

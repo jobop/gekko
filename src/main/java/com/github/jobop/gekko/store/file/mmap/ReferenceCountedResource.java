@@ -16,7 +16,7 @@
  *
  * Created by CuttleFish on 2020/7/6.
  */
-package com.github.jobop.gekko.store.mmap;
+package com.github.jobop.gekko.store.file.mmap;
 
 
 import com.github.jobop.gekko.core.lifecycle.GekkoReferenceCounted;

@@ -1,3 +1,5 @@
+package com.github.jobop.gekko.store.file;
+
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -14,19 +16,32 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *
- * Created by CuttleFish on 2020/7/11.
+ * Created by CuttleFish on 2020/7/13.
  */
-package com.github.jobop.gekko.store.mmap;
+public interface BaseFile {
+    /**
+     * append all bytes in the data to the file
+     * @param data
+     * @return
+     */
+    long appendMessage(byte[] data);
 
+    /**
+     * append bytes from offset to offset+length in the data to the file
+     *
+     * @param data
+     * @param offset
+     * @param length
+     * @return
+     */
+    long appendMessage(byte[] data, long offset, int length);
 
-public interface ComposeMMapFile extends SequenceFile {
-    void load();
-
-    boolean checksum();
-
-    SlicedByteBuffer selectMappedBuffer(long pos, int size);
-
-    SlicedByteBuffer selectMappedBuffer(long pos);
-
-
+    /**
+     * get bytes which form pos to size in the file to the dest
+     * @param pos
+     * @param size
+     * @param dest
+     * @return
+     */
+    int getData(long pos, int size, byte[] dest);
 }

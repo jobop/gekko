@@ -16,7 +16,7 @@
  *
  * Created by CuttleFish on 2020/7/11.
  */
-package com.github.jobop.gekko.store.mmap;
+package com.github.jobop.gekko.store.file.mmap;
 
 import lombok.Builder;
 import lombok.Data;

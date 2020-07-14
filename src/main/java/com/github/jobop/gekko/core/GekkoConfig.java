@@ -28,7 +28,6 @@ import lombok.Singular;
 import java.util.Set;
 
 
-
 @Data
 @Builder(toBuilder = true)
 public class GekkoConfig {
@@ -43,6 +42,10 @@ public class GekkoConfig {
 
     String baseFilePath;
 
+    int storeFileSize = 1024 * 1024 * 40;
+    int osPageSize = 1024 * 4;
+
+    int flushInterval = 1;
 
 
 }

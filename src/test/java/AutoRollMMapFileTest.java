@@ -18,14 +18,10 @@
  * Created by CuttleFish on 2020/7/12.
  */
 
-import com.github.jobop.gekko.protocols.message.GekkoEntry;
-import com.github.jobop.gekko.store.mmap.AutoRollMMapFile;
-import com.github.jobop.gekko.store.mmap.SequenceFile;
-import com.github.jobop.gekko.utils.CodecUtils;
+import com.github.jobop.gekko.store.file.mmap.AutoRollMMapFile;
+import com.github.jobop.gekko.store.file.SequenceFile;
 import org.junit.Assert;
 import org.junit.Test;
-
-import java.nio.ByteBuffer;
 
 public class AutoRollMMapFileTest extends BaseTest {
     @Test

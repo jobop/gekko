@@ -27,5 +27,9 @@ import java.util.List;
 
 public interface Store extends LifeCycle {
     public void append(GekkoEntry entry);
-    public List<GekkoEntry> get(long offset, long length);
+
+    public List<GekkoEntry> batchGet(long offset, long length);
+
+    public GekkoEntry get(long offset, long length);
+
 }

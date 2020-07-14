@@ -15,14 +15,16 @@
  * limitations under the License.
  */
 
-package com.github.jobop.gekko.store.mmap;
+package com.github.jobop.gekko.store.file;
+
+import com.github.jobop.gekko.store.file.mmap.SlicedByteBuffer;
 
 import java.nio.ByteBuffer;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.channels.WritableByteChannel;
 
-public interface MmapFile extends SequenceFile {
+public interface MmapFile extends SequenceFile,SlicedAble {
     /**
      * Returns the file name of the {@code MappedFile}.
      *
@@ -77,24 +79,6 @@ public interface MmapFile extends SequenceFile {
     int flush(int flushLeastPages);
 
 
-    /**
-     * Selects a slice of the mapped byte buffer's sub-region behind the mapped file,
-     * starting at the given position.
-     *
-     * @param pos  the given position
-     * @param size the size of the returned sub-region
-     * @return a {@code SelectMappedBufferResult} instance contains the selected slice
-     */
-    SlicedByteBuffer selectMappedBuffer(int pos, int size);
-
-    /**
-     * Selects a slice of the mapped byte buffer's sub-region behind the mapped file,
-     * starting at the given position.
-     *
-     * @param pos the given position
-     * @return a {@code SelectMappedBufferResult} instance contains the selected slice
-     */
-    SlicedByteBuffer selectMappedBuffer(int pos);
 
     /**
      * Returns the mapped byte buffer behind the mapped file.
@@ -181,6 +165,9 @@ public interface MmapFile extends SequenceFile {
      * @param wrotePosition the specific wrote position
      */
     void setWrotePosition(int wrotePosition);
+
+    int getLimit();
+    void setLimit(int limit);
 
 
     long transferTo(long pos, int length, WritableByteChannel target);

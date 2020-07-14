@@ -20,21 +20,32 @@ package com.github.jobop.gekko.store;
 
 import com.github.jobop.gekko.core.GekkoConfig;
 import com.github.jobop.gekko.protocols.message.GekkoEntry;
+import com.github.jobop.gekko.store.file.mmap.AutoRollMMapFile;
+import com.github.jobop.gekko.store.file.mmap.SlicedByteBuffer;
+import com.github.jobop.gekko.utils.CodecUtils;
+import com.github.jobop.gekko.utils.NotifyableThread;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.util.List;
+import java.util.stream.Collectors;
 
 
 @Slf4j
 public class FileStore extends AbstractStore {
     private String BASE_FILE_PATH = "cekko";
-    private final String TERM_FILE_NAME = "term.cek";
-    private final String LOG_FILE_NAME = "term.cek";
-    private File termFile;
-    private File indexFile;
+
+    private AutoRollMMapFile dataFile;
+    private AutoRollMMapFile indexFile;
+
+    private Thread fileFlushThread;
+
+    private ThreadLocal<ByteBuffer> localBuffer = ThreadLocal.withInitial(() -> {
+        return ByteBuffer.allocate(1024 * 1024);
+    });
 
     public FileStore(GekkoConfig conf) {
         super(conf);
@@ -49,28 +60,68 @@ public class FileStore extends AbstractStore {
         } catch (IOException e) {
             log.error("", e);
         }
-        this.termFile = new File(BASE_FILE_PATH + File.separator + TERM_FILE_NAME);
-        try {
-            FileUtils.touch(this.termFile);
-        } catch (IOException e) {
-            log.error("", e);
-        }
-//        this.logFile = new File(BASE_FILE_PATH + File.separator + LOG_FILE_NAME);
-//        try {
-//            FileUtils.touch(this.logFile);
-//        } catch (IOException e) {
-//            log.error("", e);
-//        }
+        dataFile = new AutoRollMMapFile(BASE_FILE_PATH + File.separator + "data", conf.getStoreFileSize(), conf.getOsPageSize());
+        indexFile = new AutoRollMMapFile(BASE_FILE_PATH + File.separator + "index", conf.getStoreFileSize(), conf.getOsPageSize());
+        dataFile.load();
+        indexFile.load();
 
+        this.fileFlushThread = new NotifyableThread(this.conf.getFlushInterval(), "flush-thread") {
+            @Override
+            public void doWork() {
+                dataFile.flush(1);
+                indexFile.flush(1);
+            }
+        };
+
+    }
+
+    @Override
+    public void start() {
+        this.fileFlushThread.start();
     }
 
     @Override
     public void append(GekkoEntry entry) {
+        //FIXME:
+        synchronized (this) {
+
+            //TODO:
+            //set pos
+            long pos = dataFile.allocPos(entry.getTotalSize());
+            entry.setPos(pos);
+
+            //after set attributes,set cheksum
+            entry.computSizeInBytes();
+            entry.setChecksum(entry.checksum());
+            //set term
+            CodecUtils.encode(entry, localBuffer.get());
+
+            byte[] bytes=new byte[localBuffer.get().remaining()];
+            localBuffer.get().get(bytes);
+            dataFile.appendMessage(bytes);
+
+        }
 
     }
 
     @Override
-    public List<GekkoEntry> get(long offset, long length) {
-        return null;
+    public List<GekkoEntry> batchGet(long offset, long toOffset) {
+        List<GekkoEntry> entries = null;
+        List<SlicedByteBuffer> slicedByteBuffers = dataFile.selectMutilBufferToRead(offset, (int) toOffset);
+        if (null == slicedByteBuffers || slicedByteBuffers.isEmpty()) {
+            return null;
+        }
+        List<ByteBuffer> byteBuffers = slicedByteBuffers.stream().map(bb -> {
+            return bb.getByteBuffer();
+        }).collect(Collectors.toList());
+
+        entries = CodecUtils.decodeToList(byteBuffers);
+        return entries;
+    }
+
+    @Override
+    public GekkoEntry get(long offset, long length) {
+        SlicedByteBuffer slicedByteBuffer = dataFile.selectMappedBuffer(offset, (int) length);
+        return CodecUtils.decode(slicedByteBuffer.getByteBuffer());
     }
 }

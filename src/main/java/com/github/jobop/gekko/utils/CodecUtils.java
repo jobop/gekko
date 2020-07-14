@@ -20,8 +20,11 @@ package com.github.jobop.gekko.utils;
 
 
 import com.github.jobop.gekko.protocols.message.GekkoEntry;
+import com.github.jobop.gekko.store.file.mmap.SlicedByteBuffer;
 
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.List;
 
 
 public class CodecUtils {
@@ -39,6 +42,32 @@ public class CodecUtils {
 
     }
 
+//    public static List<GekkoEntry> decodeToList(List<SlicedByteBuffer> slicedByteBuffers) {
+//        List<GekkoEntry> entries = new ArrayList<GekkoEntry>();
+//        for (SlicedByteBuffer slicedByteBuffer : slicedByteBuffers) {
+//            long limit = slicedByteBuffer.getBelongFile().getLimit();
+//            ByteBuffer bb = slicedByteBuffer.getByteBuffer();
+//            bb.
+//            while (bb.hasRemaining()) {
+//                GekkoEntry entry = decode(bb);
+//                entries.add(entry);
+//            }
+//        }
+//        return entries;
+//    }
+
+    public static List<GekkoEntry> decodeToList(List<ByteBuffer> bbs) {
+        List<GekkoEntry> entries = new ArrayList<GekkoEntry>();
+        for (ByteBuffer bb : bbs) {
+            System.out.println("###" + bb.remaining());
+            while (bb.hasRemaining()) {
+                GekkoEntry entry = decode(bb);
+                entries.add(entry);
+            }
+        }
+        return entries;
+    }
+
     public static GekkoEntry decode(ByteBuffer bb) {
         int totalsize = bb.getInt();
         int magic = bb.getInt();
@@ -47,6 +76,7 @@ public class CodecUtils {
         long pos = bb.getLong();
         long checksum = bb.getLong();
         byte[] data = new byte[totalsize - GekkoEntry.BODY_OFFSET];
+
         bb.get(data);
         GekkoEntry entry = GekkoEntry.builder().totalSize(totalsize).magic(magic).term(term).entryIndex(entryIndex).pos(pos)
                 .checksum(checksum).data(data).build();

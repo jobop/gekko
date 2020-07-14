@@ -29,6 +29,8 @@ public enum ResultEnums {
 
     REFERENCE_COUNTED("ReferenceCounted","ReferenceCounted"),
 
+    LOAD_FILE_FAIL("LoadFileFail","LoadFileFail")
+
     ;
     private String code;
     private String msg;

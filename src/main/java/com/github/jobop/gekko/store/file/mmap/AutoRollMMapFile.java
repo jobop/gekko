@@ -16,14 +16,21 @@
  *
  * Created by CuttleFish on 2020/7/6.
  */
-package com.github.jobop.gekko.store.mmap;
+package com.github.jobop.gekko.store.file.mmap;
 
 
+import com.github.jobop.gekko.enums.ResultEnums;
+import com.github.jobop.gekko.store.file.ComposeMMapFile;
+import com.github.jobop.gekko.store.file.MmapFile;
+import com.github.jobop.gekko.store.file.SequenceFile;
+import com.github.jobop.gekko.store.file.SlicedAble;
 import com.github.jobop.gekko.utils.FileUtils;
+import com.github.jobop.gekko.utils.PreConditions;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.File;
 import java.io.FilenameFilter;
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -32,9 +39,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Pattern;
 
 @Slf4j
-public class AutoRollMMapFile implements ComposeMMapFile {
+public class AutoRollMMapFile implements ComposeMMapFile, SequenceFile, SlicedAble {
 
-    private com.github.jobop.gekko.store.mmap.MmapFile currentMMapFile;
+    private MmapFile currentMMapFile;
 
     private final static String REGEX_NUMERIC = "^\\d+$"; //$NON-NLS-1$
     private Pattern pattern = Pattern.compile(REGEX_NUMERIC);
@@ -96,7 +103,15 @@ public class AutoRollMMapFile implements ComposeMMapFile {
         if (this.allFiles.size() > 0) {
             this.currentMMapFile = this.allFiles.get(this.allFiles.size() - 1);
         }
-        this.checksum();
+        log.info("[1] load step pass!");
+        PreConditions.check(this.checksum(), ResultEnums.LOAD_FILE_FAIL, "the checksum step can not pass!");
+        log.info("[2] checksum step pass!");
+        PreConditions.check(this.recover(), ResultEnums.LOAD_FILE_FAIL, "the recover step can not pass!");
+        log.info("[3] recover step pass!");
+    }
+
+    private boolean recover() {
+        return true;
     }
 
     @Override
@@ -119,16 +134,20 @@ public class AutoRollMMapFile implements ComposeMMapFile {
         return true;
     }
 
+    @Override
+    public void flush(int flushLeastPages) {
+        if (null != this.currentMMapFile) {
+            this.currentMMapFile.flush(1);
+        }
+    }
+
 
     public long appendMessage(byte[] data) {
         return this.appendMessage(data, 0, data.length);
     }
 
-    public long allocPos(byte[] data) {
-        return this.allocPos(data, 0, data.length);
-    }
 
-    public long allocPos(byte[] data, int offset, int length) {
+    public long allocPos(int length) {
         MmapFile mmapFile = chooseMMapFileToWrite(this.currentMMapFile, length);
         if (null == mmapFile) {
             return -1;
@@ -137,7 +156,7 @@ public class AutoRollMMapFile implements ComposeMMapFile {
     }
 
     public long appendMessage(byte[] data, long offset, int length) {
-        this.allocPos(data, 0, data.length);
+        this.allocPos(data.length);
         long pos = this.currentMMapFile.getFileFromOffset() + this.currentMMapFile.getWrotePosition();
         if (-1 == this.currentMMapFile.appendMessage(data, offset, length)) {
             return -1;
@@ -164,6 +183,46 @@ public class AutoRollMMapFile implements ComposeMMapFile {
         return readedSize;
     }
 
+
+    public List<SlicedByteBuffer> selectMutilBufferToRead(long fromPos, int toPos) {
+        long size = toPos - fromPos;
+        List<SlicedByteBuffer> buffers = new ArrayList<SlicedByteBuffer>();
+        //calac the pos belong to which file
+        int pretFileIndex = (int) fromPos / this.singleFileSize;
+        int pretPosInFile = (int) (fromPos % this.singleFileSize);
+
+        long hasSelectedSize = 0;
+        do {
+            if (pretFileIndex > this.allFiles.size() - 1) {
+                log.warn("the ops overflow ops=" + fromPos + " and filelist size=" + this.allFiles.size());
+                return null;
+            }
+            MmapFile preFile = this.allFiles.get(pretFileIndex);
+
+            long preFileSelectedRemaining = preFile.getWrotePosition() - pretPosInFile;
+            hasSelectedSize = preFileSelectedRemaining + hasSelectedSize;
+
+            long remainingToselect = size - hasSelectedSize;
+
+            long preFileReadRemaining = preFile.getLimit() - pretPosInFile;
+
+            if (preFile.getFileFromOffset() + preFile.getFileSize() >= toPos) {
+                if (remainingToselect < 0) {
+                    buffers.add(preFile.selectMappedBuffer(pretPosInFile, (int) (preFileSelectedRemaining + remainingToselect)));
+                } else {
+                    buffers.add(preFile.selectMappedBuffer(pretPosInFile, (int) remainingToselect));
+                }
+                break;
+            } else {
+                buffers.add(preFile.selectMappedBuffer(pretPosInFile, (int) preFileReadRemaining));
+            }
+            ++pretFileIndex;
+            pretPosInFile = 0;
+        } while (true);
+
+
+        return buffers;
+    }
 
     @Override
     public SlicedByteBuffer selectMappedBuffer(long pos, int size) {
@@ -209,9 +268,17 @@ public class AutoRollMMapFile implements ComposeMMapFile {
                 return currentMMapFile;
             } else {
                 //write a flag what means the file has full
-                currentMMapFile.appendMessage(EOF);
+                int oldLimit = currentMMapFile.getLimit();
+
+                //for recover
+                ByteBuffer bb = ByteBuffer.allocate(EOF.length + 4);
+                bb.put(EOF);
+                bb.putInt(oldLimit);
+                currentMMapFile.appendMessage(bb.array());
+
                 currentMMapFile.setFlushedPosition(currentMMapFile.getFileSize());
                 currentMMapFile.setWrotePosition(currentMMapFile.getFileSize());
+                currentMMapFile.setLimit(oldLimit);
                 return createNewMMapFile(currentMMapFile);
             }
 
@@ -232,5 +299,67 @@ public class AutoRollMMapFile implements ComposeMMapFile {
         this.currentMMapFile = newFile;
         this.allFiles.add(newFile);
         return newFile;
+    }
+
+    public long trimBefore(long pos) {
+        List<MmapFile> needRemoveFiles = new ArrayList<MmapFile>();
+        for (MmapFile file : this.allFiles) {
+            if (file.getFileFromOffset() >= pos) {
+                break;
+            }
+            if (file.getFileFromOffset() + this.singleFileSize < pos) {
+                needRemoveFiles.add(file);
+            }
+            if (file.getFileFromOffset() <= pos && file.getFileFromOffset() + this.singleFileSize > pos) {
+                file.trimBefore(pos % this.singleFileSize);
+            }
+        }
+        clearExpireFiles(needRemoveFiles);
+        return pos;
+    }
+
+    public long trimAfter(long pos) {
+        List<MmapFile> needRemoveFiles = new ArrayList<MmapFile>();
+        for (MmapFile file : this.allFiles) {
+            if (file.getFileFromOffset() <= pos) {
+                continue;
+            }
+            if (file.getFileFromOffset() > pos) {
+                needRemoveFiles.add(file);
+            }
+            if (file.getFileFromOffset() <= pos && file.getFileFromOffset() + this.singleFileSize > pos) {
+                file.trimAfter(pos % this.singleFileSize);
+            }
+        }
+        clearExpireFiles(needRemoveFiles);
+        return pos;
+    }
+
+    private void clearExpireFiles(List<MmapFile> needRemoveFiles) {
+        for (MmapFile file : needRemoveFiles) {
+            file.destroy(1000);
+            if (this.allFiles.contains(file)) {
+                this.allFiles.remove(file);
+            }
+        }
+    }
+
+
+    @Override
+    public long getMinOffset() {
+        if (this.allFiles.isEmpty()) {
+            return 0;
+        }
+        MmapFile file = this.allFiles.get(0);
+        return file.getStartPosition();
+    }
+
+    @Override
+    public long getMaxOffset() {
+        if (this.allFiles.isEmpty()) {
+            return 0;
+        }
+        MmapFile file = this.allFiles.get(this.allFiles.size() - 1);
+        return file.getFileFromOffset() + file.getMaxOffset();
     }
 }

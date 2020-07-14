@@ -16,9 +16,10 @@
  *
  * Created by CuttleFish on 2020/7/5.
  */
-package com.github.jobop.gekko.store.mmap;
+package com.github.jobop.gekko.store.file.mmap;
 
 import com.github.jobop.gekko.core.exception.GekkoException;
+import com.github.jobop.gekko.store.file.MmapFile;
 import com.github.jobop.gekko.utils.FileUtils;
 import com.github.jobop.gekko.utils.MmapUtils;
 import lombok.extern.slf4j.Slf4j;
@@ -31,6 +32,8 @@ import java.nio.ByteBuffer;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.channels.WritableByteChannel;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 
@@ -41,8 +44,10 @@ public class DefaultMMapFile extends ShutdownableReferenceCountedResource implem
     private int osPageSize = 1024 * 4;
     private int fileSize;
     private long fileFromOffset;
+    //the pos use for start append
     private AtomicInteger startPos = new AtomicInteger(0);
     private AtomicInteger wrotePos = new AtomicInteger(0);
+    private AtomicInteger limit = new AtomicInteger(0);
     private AtomicInteger flushedPos = new AtomicInteger(0);
     protected volatile boolean hashClean = false;
     /**
@@ -119,6 +124,7 @@ public class DefaultMMapFile extends ShutdownableReferenceCountedResource implem
                 byteBuffer.position(currentWrotePos);
                 byteBuffer.put(data, (int) offset, length);
                 this.wrotePos.addAndGet(length);
+                this.limit.addAndGet(length);
                 return Long.valueOf(currentWrotePos);
             } else {
                 return -1l;
@@ -151,12 +157,12 @@ public class DefaultMMapFile extends ShutdownableReferenceCountedResource implem
      * @return
      */
     @Override
-    public SlicedByteBuffer selectMappedBuffer(int pos, int size) {
+    public SlicedByteBuffer selectMappedBuffer(long pos, int size) {
         this.retain();
         ByteBuffer targetbyteBuffer = sliceByteBuffer(pos, size);
         return SlicedByteBuffer.builder()
                 .belongFile(this)
-                .filePos(pos)
+                .filePos((int) pos)
                 .byteBuffer(targetbyteBuffer)
                 .gobalPos(this.getFileFromOffset() + pos)
                 .size(size).
@@ -164,9 +170,16 @@ public class DefaultMMapFile extends ShutdownableReferenceCountedResource implem
     }
 
     @Override
-    public SlicedByteBuffer selectMappedBuffer(int pos) {
-        int size = this.getWrotePosition() - pos;
+    public SlicedByteBuffer selectMappedBuffer(long pos) {
+        int size = this.getLimit() - (int) pos;
         return this.selectMappedBuffer(pos, size);
+    }
+
+    @Override
+    public List<SlicedByteBuffer> selectMutilBufferToRead(long pos, int size) {
+        List<SlicedByteBuffer> buffers=new ArrayList<SlicedByteBuffer>();
+        buffers.add(this.selectMappedBuffer(pos,size));
+        return buffers;
     }
 
     private boolean isAbleToFlush(final int flushLeastPages) {
@@ -222,6 +235,16 @@ public class DefaultMMapFile extends ShutdownableReferenceCountedResource implem
         this.wrotePos.set(wrotePosition);
     }
 
+    @Override
+    public int getLimit() {
+        return this.limit.get();
+    }
+
+    @Override
+    public void setLimit(int limit) {
+        this.limit.set(limit);
+    }
+
 
     public long transferTo(long pos, int length, WritableByteChannel target) {
         return (Long) this.autoReleaseTemplate(x -> {
@@ -273,8 +296,8 @@ public class DefaultMMapFile extends ShutdownableReferenceCountedResource implem
             return -1;
         }
         if (pos + size > this.getWrotePosition()) {
-            log.warn("the pos+size>wrotePosition, request pos: " + pos + ", size: " + size
-                    + ", wrotePosition: " + this.getWrotePosition());
+            log.warn("the pos+size>imit, request pos: " + pos + ", size: " + size
+                    + ", imit: " + this.getWrotePosition());
             return -1;
         }
 
@@ -296,8 +319,8 @@ public class DefaultMMapFile extends ShutdownableReferenceCountedResource implem
 
     private ByteBuffer sliceByteBuffer(long pos, int size) {
         if (pos + size > this.getWrotePosition()) {
-            log.warn("the pos+size>wrotePosition, request pos: " + pos + ", size: " + size
-                    + ", wrotePosition: " + this.getWrotePosition());
+            log.warn("the pos+size>limit, request pos: " + pos + ", size: " + size
+                    + ", limit: " + this.getWrotePosition());
             return null;
         }
         ByteBuffer srcByteBuffer = this.mappedByteBuffer.slice();
@@ -326,4 +349,30 @@ public class DefaultMMapFile extends ShutdownableReferenceCountedResource implem
     }
 
 
+    @Override
+    public long getMinOffset() {
+        return this.getStartPosition();
+    }
+
+    @Override
+    public long getMaxOffset() {
+        return this.getWrotePosition();
+    }
+
+    @Override
+    public long trimAfter(long pos) {
+        this.wrotePos.set((int) pos);
+        this.limit.set((int) pos);
+        this.flushedPos.set((int) pos);
+        return pos;
+    }
+
+    @Override
+    public long trimBefore(long pos) {
+        if(pos>this.limit.get()){
+            return -1;
+        }
+        this.startPos.set((int)pos);
+        return pos;
+    }
 }
