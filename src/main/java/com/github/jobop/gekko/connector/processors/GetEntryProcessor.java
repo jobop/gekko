@@ -21,22 +21,22 @@ package com.github.jobop.gekko.connector.processors;
 import com.alipay.remoting.AsyncContext;
 import com.alipay.remoting.BizContext;
 import com.github.jobop.gekko.protocols.GekkoInboundProtocol;
-import com.github.jobop.gekko.protocols.message.api.GetEntryReq;
-import com.github.jobop.gekko.protocols.message.api.GetEntryResp;
+import com.github.jobop.gekko.protocols.message.api.PullEntryReq;
+import com.github.jobop.gekko.protocols.message.api.PullEntryResp;
 
 
-public class GetEntryProcessor extends DefaultProcessor<GetEntryReq> {
+public class GetEntryProcessor extends DefaultProcessor<PullEntryReq> {
 
     public GetEntryProcessor(GekkoInboundProtocol helper) {
         super(helper);
     }
 
-    public void handleRequest(BizContext bizCtx, AsyncContext asyncCtx, GetEntryReq request) {
-        GetEntryResp reps = helper.getEntries(request);
+    public void handleRequest(BizContext bizCtx, AsyncContext asyncCtx, PullEntryReq request) {
+        PullEntryResp reps = helper.getEntries(request);
         asyncCtx.sendResponse(reps);
     }
 
     public String interest() {
-        return GetEntryReq.class.getName();
+        return PullEntryReq.class.getName();
     }
 }

@@ -44,7 +44,7 @@ public class NodeState extends LifeCycleAdpter {
     private long term;
     private long writeId;
     private long commitId;
-    private Map<String, String> peersMap = new ConcurrentHashMap<String, String>();
+    private Map<String, Peer> peersMap = new ConcurrentHashMap<String, Peer>();
 
     public void init() {
         this.selfId = this.config.getSelfId();
@@ -65,7 +65,10 @@ public class NodeState extends LifeCycleAdpter {
         this.config.getPeerIds().toArray(peerIdArray);
 
         for (int i = 0; i < peerArray.length; i++) {
-            this.peersMap.put(peerIdArray[i], peerArray[i]);
+            String peer = peerArray[i];
+            String host = peer.split(":")[0];
+            String port = peer.split(":")[1];
+            this.peersMap.put(peerIdArray[i], Peer.builder().host(host).port(Integer.valueOf(port)).build());
         }
 
     }

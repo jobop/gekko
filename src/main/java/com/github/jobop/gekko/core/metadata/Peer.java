@@ -1,3 +1,4 @@
+
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -14,21 +15,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *
- * Created by CuttleFish on 2020/7/2.
+ * Created by CuttleFish on 2020/7/16.
  */
-package com.github.jobop.gekko.protocols;
 
+package com.github.jobop.gekko.core.metadata;
 
-import com.github.jobop.gekko.protocols.message.GekkoEntry;
-import com.github.jobop.gekko.protocols.message.node.*;
+import lombok.Builder;
+import lombok.Data;
 
-import java.util.List;
-
-public interface GekkoNodeConnectHandlerProtocol {
-    public VoteResp handleVote(VoteReq req);
-
-    public HeartBeatResp handleHeartBeat(HeartBeatReq req);
-
-    public PushEntryResp handlePushDatas(PushEntryReq req);
+@Builder
+@Data
+public class Peer {
+    private String host;
+    private int port;
 }
-

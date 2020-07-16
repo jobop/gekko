@@ -23,8 +23,7 @@ package com.github.jobop.gekko.connector;
 import com.github.jobop.gekko.core.statemachine.StateMachine;
 import com.github.jobop.gekko.protocols.GekkoInboundProtocol;
 import com.github.jobop.gekko.protocols.message.api.*;
-import com.github.jobop.gekko.protocols.message.node.VoteReq;
-import com.github.jobop.gekko.protocols.message.node.VoteResp;
+import com.github.jobop.gekko.protocols.message.node.*;
 import com.github.jobop.gekko.store.Store;
 
 
@@ -37,20 +36,65 @@ public class GekkoInboundMsgHelper implements GekkoInboundProtocol {
         this.stateMachine = stateMachine;
     }
 
-    public GetEntryResp getEntries(GetEntryReq req) {
+    /**
+     * from flower or user
+     * @param req
+     * @return
+     */
+    @Override
+    public PullEntryResp handleGetEntries(PullEntryReq req) {
 
         return null;
     }
 
-    public AppendEntryResp appendEntry(AppendEntryReq req) {
+    /**
+     * from user
+     * @param req
+     * @return
+     */
+    @Override
+    public AppendEntryResp handleAppendEntry(AppendEntryReq req) {
         return null;
     }
 
-    public GetMetadataResp getMetadata(GetMetadataReq req) {
+    /**
+     * from flower or user
+     * @param req
+     * @return
+     */
+    @Override
+    public GetMetadataResp handleGetMetadata(GetMetadataReq req) {
         return null;
     }
 
-    public VoteResp vote(VoteReq req) {
+
+    /**
+     * from nodes
+     * @param req
+     * @return
+     */
+    @Override
+    public VoteResp handleVote(VoteReq req) {
+        return null;
+    }
+
+    /**
+     * from nodes
+     * @param req
+     * @return
+     */
+    @Override
+    public HeartBeatResp handleHeartBeat(HeartBeatReq req) {
+        return null;
+    }
+
+    /**
+     * from leader
+     * @param req
+     * @return
+     */
+    @Override
+    public PushEntryResp handlePushDatas(PushEntryReq req) {
         return null;
     }
 }

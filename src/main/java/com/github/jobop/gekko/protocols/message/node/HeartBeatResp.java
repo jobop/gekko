@@ -16,7 +16,7 @@
  *
  * Created by CuttleFish on 2020/7/2.
  */
-package com.github.jobop.gekko.protocols.message.api;
+package com.github.jobop.gekko.protocols.message.node;
 
 import lombok.Data;
 
@@ -24,10 +24,7 @@ import java.io.Serializable;
 
 
 @Data
-public class GetEntryReq implements Serializable {
-    /** for serialization */
-    private static final long  serialVersionUID          = -1288207208017808618L;
+public class HeartBeatResp implements Serializable {
 
-    private Integer offset;
-    private Integer length;
+    String code;
 }

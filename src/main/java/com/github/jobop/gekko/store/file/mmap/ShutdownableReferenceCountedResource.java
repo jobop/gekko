@@ -67,7 +67,6 @@ public abstract class ShutdownableReferenceCountedResource extends ReferenceCoun
         this.release(callbacks);
 
         if (!this.hashClean) {
-//            long checkInterval = intervalForcibly / 10;
             //usde the HashedWheelTimer to trigger the job
             TimerHolder.getTimer().newTimeout(new TimerTask() {
                 @Override

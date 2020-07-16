@@ -16,19 +16,18 @@
  *
  * Created by CuttleFish on 2020/7/2.
  */
-package com.github.jobop.gekko.protocols;
+package com.github.jobop.gekko.protocols.message.api;
+
+import lombok.Data;
+
+import java.io.Serializable;
 
 
-import com.github.jobop.gekko.protocols.message.GekkoEntry;
-import com.github.jobop.gekko.protocols.message.node.*;
+@Data
+public class PullEntryReq implements Serializable {
+    /** for serialization */
+    private static final long  serialVersionUID          = -1288207208017808618L;
 
-import java.util.List;
-
-public interface GekkoNodeConnectHandlerProtocol {
-    public VoteResp handleVote(VoteReq req);
-
-    public HeartBeatResp handleHeartBeat(HeartBeatReq req);
-
-    public PushEntryResp handlePushDatas(PushEntryReq req);
+    private Integer fromIndex;
+    private Integer toIndex;
 }
-

@@ -44,6 +44,7 @@ public class GekkoNode extends LifeCycleAdpter {
 
     public GekkoNode(GekkoConfig conf) {
         this.conf = conf;
+        this.nodeState = new NodeState(this.conf);
         if (conf.getStoreType() == StoreEnums.MEMORY) {
             this.store = new MemoryStore(conf);
         } else if (conf.getStoreType() == StoreEnums.FILE) {
@@ -54,9 +55,9 @@ public class GekkoNode extends LifeCycleAdpter {
         this.stateMachine = conf.getStateMachine();
 
         this.inboundHelper = new GekkoInboundMsgHelper(this.store, this.stateMachine);
-        this.server = new GekkoNettyServer(conf, this.inboundHelper);
+        this.server = new GekkoNettyServer(conf, this.inboundHelper,this. nodeState);
         this.nodeClient = new GekkoNodeNettyClient(conf);
-        this.nodeState = new NodeState(conf);
+
 
     }
 
@@ -66,6 +67,7 @@ public class GekkoNode extends LifeCycleAdpter {
         this.nodeState.init();
         this.store.init();
         this.server.init();
+
         this.nodeClient.init();
     }
 

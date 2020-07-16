@@ -21,15 +21,73 @@
 package com.github.jobop.gekko.connector;
 
 
+import com.alipay.remoting.exception.RemotingException;
+import com.alipay.remoting.rpc.RpcClient;
 import com.github.jobop.gekko.core.GekkoConfig;
 import com.github.jobop.gekko.core.lifecycle.LifeCycleAdpter;
+import com.github.jobop.gekko.core.metadata.NodeState;
+import com.github.jobop.gekko.core.metadata.Peer;
 import com.github.jobop.gekko.protocols.GekkoNodeConnectProtocol;
+import com.github.jobop.gekko.protocols.message.GekkoEntry;
+import com.github.jobop.gekko.protocols.message.node.PushEntryReq;
 
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
+/**
+ * the client to connect to orther nodes
+ */
 public class GekkoNodeNettyClient extends LifeCycleAdpter implements GekkoNodeConnectProtocol {
     GekkoConfig conf;
+    NodeState nodeState;
+    //    ConcurrentHashMap<String, RpcClient> orderNodesRpcClient = new ConcurrentHashMap<String, RpcClient>();
+    RpcClient orderNodesRpcClient;
 
-    public GekkoNodeNettyClient(GekkoConfig conf) {
+    public GekkoNodeNettyClient(GekkoConfig conf, NodeState nodeState) {
         this.conf = conf;
+        this.nodeState = nodeState;
+    }
+
+    @Override
+    public void init() {
+//        for (Map.Entry<String, Peer> e : this.nodeState.getPeersMap().entrySet()) {
+//            String peerId = e.getKey();
+//            Peer peer = e.getValue();
+//
+//            orderNodesRpcClient.put(peerId,new RpcClient())
+//        }
+        orderNodesRpcClient = new RpcClient();
+
+    }
+
+    @Override
+    public void start() {
+    }
+
+    @Override
+    public void shutdown() {
+        orderNodesRpcClient.shutdown();
+    }
+
+    @Override
+    public void sendHeartBeat() {
+
+    }
+
+    @Override
+    public void pushDatas(List<GekkoEntry> entries) {
+        for (Map.Entry<String, Peer> e : this.nodeState.getPeersMap().entrySet()) {
+            String peerId = e.getKey();
+            Peer peer = e.getValue();
+            //TODO:
+            try {
+                orderNodesRpcClient.oneway(peer.getHost() + ":" + peer.getPort(), PushEntryReq.builder().entries(entries).build());
+            } catch (RemotingException remotingException) {
+                remotingException.printStackTrace();
+            } catch (InterruptedException interruptedException) {
+                interruptedException.printStackTrace();
+            }
+        }
     }
 }

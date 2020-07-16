@@ -19,5 +19,13 @@
 package com.github.jobop.gekko.protocols;
 
 
+import com.github.jobop.gekko.core.GekkoNode;
+import com.github.jobop.gekko.protocols.message.GekkoEntry;
+
+import java.util.List;
+
 public interface GekkoNodeConnectProtocol {
+    public void sendHeartBeat();
+
+    public void pushDatas(List<GekkoEntry> entrys);
 }

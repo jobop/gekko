@@ -23,12 +23,12 @@ import com.github.jobop.gekko.protocols.message.api.*;
 
 
 public interface GekkoApiProtocol {
-    public GetEntryResp getEntries(GetEntryReq req);
+    public PullEntryResp handleGetEntries(PullEntryReq req);
 
-    public AppendEntryResp appendEntry(AppendEntryReq req);
+    public AppendEntryResp handleAppendEntry(AppendEntryReq req);
     //获取元数据
 
-    public GetMetadataResp getMetadata(GetMetadataReq req);
+    public GetMetadataResp handleGetMetadata(GetMetadataReq req);
 
 
 }

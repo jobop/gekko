@@ -20,8 +20,13 @@
 package com.github.jobop.gekko.connector;
 
 
+import com.alipay.remoting.rpc.RpcConnectionFactory;
+import com.alipay.remoting.rpc.RpcServer;
+import com.github.jobop.gekko.connector.processors.GetEntryProcessor;
 import com.github.jobop.gekko.core.GekkoConfig;
 import com.github.jobop.gekko.core.lifecycle.LifeCycleAdpter;
+import com.github.jobop.gekko.core.metadata.NodeState;
+import com.github.jobop.gekko.core.metadata.Peer;
 import com.github.jobop.gekko.protocols.GekkoInboundProtocol;
 
 /**
@@ -29,22 +34,28 @@ import com.github.jobop.gekko.protocols.GekkoInboundProtocol;
  */
 public class GekkoNettyServer extends LifeCycleAdpter {
     GekkoInboundProtocol inboundHelper;
+    NodeState nodeState;
     GekkoConfig conf;
+    RpcServer rpcServer;
 
-    public GekkoNettyServer(GekkoConfig conf, GekkoInboundProtocol inboundHelper) {
+    public GekkoNettyServer(GekkoConfig conf, GekkoInboundProtocol inboundHelper, NodeState nodeState) {
         this.inboundHelper = inboundHelper;
         this.conf = conf;
+        this.nodeState = nodeState;
     }
 
     public void init() {
+        Peer selfPeer = this.nodeState.getPeersMap().get(conf.getSelfId());
+        rpcServer = new RpcServer(selfPeer.getPort());
 
+        rpcServer.registerUserProcessor(new GetEntryProcessor(inboundHelper));
     }
 
     public void start() {
-
+        rpcServer.startup();
     }
 
     public void shutdown() {
-
+        rpcServer.shutdown();
     }
 }
