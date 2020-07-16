@@ -35,4 +35,16 @@ public class FileUtils {
             throw new GekkoException(e);
         }
     }
+
+    public static long fileNameToFromOffset(String fileName) {
+        if (fileName.indexOf(".") == -1) {
+            return Long.valueOf(fileName);
+        }
+        String offsetStr = fileName.substring(0, fileName.indexOf("."));
+        return Long.valueOf(offsetStr);
+    }
+
+    public static void main(String[] args) {
+        System.out.println(fileNameToFromOffset("124321321344445.txt"));
+    }
 }

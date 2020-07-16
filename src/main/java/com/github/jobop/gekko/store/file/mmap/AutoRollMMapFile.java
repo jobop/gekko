@@ -19,6 +19,7 @@
 package com.github.jobop.gekko.store.file.mmap;
 
 
+import com.github.jobop.gekko.core.exception.GekkoException;
 import com.github.jobop.gekko.enums.ResultEnums;
 import com.github.jobop.gekko.store.file.ComposeMMapFile;
 import com.github.jobop.gekko.store.file.MmapFile;
@@ -28,9 +29,9 @@ import com.github.jobop.gekko.utils.FileUtils;
 import com.github.jobop.gekko.utils.PreConditions;
 import lombok.extern.slf4j.Slf4j;
 
-import java.io.File;
-import java.io.FilenameFilter;
+import java.io.*;
 import java.nio.ByteBuffer;
+import java.nio.channels.FileChannel;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -41,18 +42,30 @@ import java.util.regex.Pattern;
 @Slf4j
 public class AutoRollMMapFile implements ComposeMMapFile, SequenceFile, SlicedAble {
 
+    private static int FILE_META_DATA_SIZE = 8 + 4;
     private MmapFile currentMMapFile;
 
-    private final static String REGEX_NUMERIC = "^\\d+$"; //$NON-NLS-1$
-    private Pattern pattern = Pattern.compile(REGEX_NUMERIC);
+    private final static String DATA_FILE_NAME_REGEX_NUMERIC = "^\\d+$"; //$NON-NLS-1$
+
+    private final static String META_DATA_FILE_NAME_REGEX_NUMERIC = ".*(.meta)$"; //$NON-NLS-1$
+    private static Pattern DATA_FILE_PATTERN = Pattern.compile(DATA_FILE_NAME_REGEX_NUMERIC);
+
+    private static Pattern META_DATA_FILE_PATTERN = Pattern.compile(META_DATA_FILE_NAME_REGEX_NUMERIC);
     private long index;
+
+    private CopyOnWriteArrayList<MmapFile> allMetaDataFiles = new CopyOnWriteArrayList<MmapFile>();
     private CopyOnWriteArrayList<MmapFile> allFiles = new CopyOnWriteArrayList<MmapFile>();
     private final String storePath;
     private int singleFileSize = 1024 * 1024 * 40;
     private int osPageSize = 1024 * 4;
-    private static final byte[] EOF = new byte[]{0xC, 0xA, 0xF, 0xE, 0xD, 0xA, 0xD, 0xD};
+    private static final int EOF_MAGIC = 0xCAFEFFFF;
     private static int BLANK_THRESHOLD = 0;
     private AtomicInteger hasLoad = new AtomicInteger(0);
+    private AtomicInteger hasLoadMetaDataFile = new AtomicInteger(0);
+
+    private ThreadLocal<ByteBuffer> localByteBuffer = ThreadLocal.withInitial(() -> {
+        return ByteBuffer.allocate(1024 * 1024);
+    });
 
     public AutoRollMMapFile(String storePath, int singleFileSize, int osPageSize) {
         this.storePath = storePath;
@@ -66,11 +79,56 @@ public class AutoRollMMapFile implements ComposeMMapFile, SequenceFile, SlicedAb
         if (!hasLoad.compareAndSet(0, 1)) {
             return;
         }
+
+
         //search storePath to find out all files
         File storeDir = new File(this.storePath);
         if (!storeDir.exists()) {
             FileUtils.forceMkdir(storeDir);
         }
+
+
+        loadDataFiles(storeDir);
+        log.info("[1] load datafile pass!");
+
+        PreConditions.check(this.checksum(), ResultEnums.LOAD_FILE_FAIL, "the checksum step can not pass!");
+        log.info("[2] datafile checksum step pass!");
+
+        PreConditions.check(this.recover(), ResultEnums.LOAD_FILE_FAIL, "the recover step can not pass!");
+        log.info("[3] recover datafile pass!");
+
+
+    }
+
+//    private void loadMetaDataFiles(File storeDir) {
+//        List<MmapFile> localfiles = loadMmapFilesByNamePattern(storeDir);
+//        if (localfiles == null) return;
+//        this.allFiles.addAll(localfiles);
+//        if (this.allFiles.size() > 0) {
+//            this.currentMMapFile = this.allFiles.get(this.allFiles.size() - 1);
+//        }
+//        return;
+//    }
+
+    private void loadMetaDataFiles(File storeDir) {
+        List<MmapFile> loadfiles = loadMmapFilesByNamePattern(storeDir, META_DATA_FILE_PATTERN, FILE_META_DATA_SIZE);
+        if (loadfiles == null) return;
+        this.allMetaDataFiles.addAll(loadfiles);
+        return;
+    }
+
+    private void loadDataFiles(File storeDir) {
+        List<MmapFile> loadfiles = loadMmapFilesByNamePattern(storeDir, DATA_FILE_PATTERN, this.singleFileSize);
+        if (loadfiles == null) return;
+        this.allFiles.addAll(loadfiles);
+        if (this.allFiles.size() > 0) {
+            this.currentMMapFile = this.allFiles.get(this.allFiles.size() - 1);
+        }
+        return;
+    }
+
+    private List<MmapFile> loadMmapFilesByNamePattern(File storeDir, Pattern pattern, int fileSize) {
+        List<MmapFile> localfiles = new ArrayList<MmapFile>();
         File[] files = storeDir.listFiles(new FilenameFilter() {
             @Override
             public boolean accept(File dir, String name) {
@@ -78,14 +136,14 @@ public class AutoRollMMapFile implements ComposeMMapFile, SequenceFile, SlicedAb
             }
         });
         if (null == files || files.length <= 0) {
-            return;
+            return null;
         }
 
-        List<MmapFile> localfiles = new ArrayList<MmapFile>();
+
         for (File file : files) {
-            DefaultMMapFile mmapFile = new DefaultMMapFile(file.getPath(), this.singleFileSize, this.osPageSize);
-            mmapFile.setWrotePosition(this.singleFileSize);
-            mmapFile.setFlushedPosition(this.singleFileSize);
+            DefaultMMapFile mmapFile = new DefaultMMapFile(file.getPath(), fileSize, this.osPageSize);
+            mmapFile.setWrotePosition(fileSize);
+            mmapFile.setFlushedPosition(fileSize);
             localfiles.add(mmapFile);
 
         }
@@ -99,19 +157,84 @@ public class AutoRollMMapFile implements ComposeMMapFile, SequenceFile, SlicedAb
                 }
             }
         });
-        this.allFiles.addAll(localfiles);
-        if (this.allFiles.size() > 0) {
-            this.currentMMapFile = this.allFiles.get(this.allFiles.size() - 1);
-        }
-        log.info("[1] load step pass!");
-        PreConditions.check(this.checksum(), ResultEnums.LOAD_FILE_FAIL, "the checksum step can not pass!");
-        log.info("[2] checksum step pass!");
-        PreConditions.check(this.recover(), ResultEnums.LOAD_FILE_FAIL, "the recover step can not pass!");
-        log.info("[3] recover step pass!");
+        return localfiles;
     }
 
+
     private boolean recover() {
+        for (MmapFile dataFile : this.allFiles) {
+            String metaDataFileName = dataFile.getFileName() + ".meta";
+            MmapFile metaDataFile = new DefaultMMapFile(metaDataFileName, FILE_META_DATA_SIZE, this.osPageSize);
+            boolean needRepairMetaData = false;
+            if (metaDataFile.getLimit() != FILE_META_DATA_SIZE) {
+                needRepairMetaData = true;
+                log.warn("the metadatafile not match the length,will repair!");
+            } else {
+                ByteBuffer metaDataByteBuffer = metaDataFile.sliceByteBuffer();
+                Long dataFileFromOffet = metaDataByteBuffer.getLong();
+                int limit = metaDataByteBuffer.getInt();
+
+                if (limit == dataFile.getFileSize()) {
+                    dataFile.setWrotePosition(dataFile.getFileSize());
+                    dataFile.setLimit(limit);
+                } else {
+                    int eofPos = limit;
+                    if (eofPos > dataFile.getFileSize()) {
+                        needRepairMetaData = true;
+                    } else {
+                        metaDataByteBuffer.position(eofPos);
+                        if (metaDataByteBuffer.getInt() == EOF_MAGIC) {
+                            dataFile.setWrotePosition(dataFile.getFileSize());
+                            dataFile.setLimit(limit);
+                        } else {
+                            needRepairMetaData = true;
+                        }
+                    }
+                }
+
+            }
+
+
+            if (needRepairMetaData) {
+                repairMetaData(dataFile, metaDataFile);
+            }
+        }
+
         return true;
+    }
+    //FIXME:it's not good to dependency to the data what we write,we can wrap a protocol the identify the size
+    private void repairMetaData(MmapFile dataFile, MmapFile metaDataFile) {
+        ByteBuffer byteBuffer = dataFile.sliceByteBuffer();
+
+        int posInfile = 0;
+        while (true) {
+            int magic = byteBuffer.getInt();
+            if (magic == EOF_MAGIC) {
+                int limit = byteBuffer.getInt();
+                dataFile.setLimit(limit);
+                dataFile.setWrotePosition(dataFile.getFileSize());
+                log.warn("the limit in the metadatafile will repair to " + limit + " filename=" + dataFile.getFileName());
+                writeMetaDataFile(dataFile, metaDataFile);
+                this.allMetaDataFiles.add(dataFile);
+                break;
+            }
+            int entrySize = byteBuffer.getInt();
+            if (entrySize == 0) {
+                dataFile.setLimit(posInfile);
+                dataFile.setWrotePosition(posInfile);
+                break;
+            }
+            posInfile += entrySize;
+            if (posInfile >= dataFile.getFileSize()) {
+                dataFile.setLimit(dataFile.getFileSize());
+                dataFile.setWrotePosition(dataFile.getFileSize());
+                writeMetaDataFile(dataFile, metaDataFile);
+                this.allMetaDataFiles.add(dataFile);
+
+                break;
+            }
+            byteBuffer.position(posInfile);
+        }
     }
 
     @Override
@@ -267,14 +390,19 @@ public class AutoRollMMapFile implements ComposeMMapFile, SequenceFile, SlicedAb
                 int oldLimit = currentMMapFile.getLimit();
 
                 //for recover
-                ByteBuffer bb = ByteBuffer.allocate(EOF.length + 4);
-                bb.put(EOF);
+                ByteBuffer bb = ByteBuffer.allocate(4 + 4);
+                bb.putInt(EOF_MAGIC);
                 bb.putInt(oldLimit);
+
+
                 currentMMapFile.appendMessage(bb.array());
 
-                currentMMapFile.setFlushedPosition(currentMMapFile.getFileSize());
-                currentMMapFile.setWrotePosition(currentMMapFile.getFileSize());
-                currentMMapFile.setLimit(oldLimit);
+
+                this.currentMMapFile.setFlushedPosition(currentMMapFile.getFileSize());
+                this.currentMMapFile.setWrotePosition(currentMMapFile.getFileSize());
+                this.currentMMapFile.setLimit(oldLimit);
+                //save this limit to metadata file
+                saveFileMetaData(this.currentMMapFile);
                 return createNewMMapFile(currentMMapFile);
             }
 
@@ -284,12 +412,29 @@ public class AutoRollMMapFile implements ComposeMMapFile, SequenceFile, SlicedAb
 
     }
 
+    private void saveFileMetaData(MmapFile archiveFile) {
+        String fileName = archiveFile.getFileName() + ".meta";
+        MmapFile newFile = new DefaultMMapFile(fileName, FILE_META_DATA_SIZE, this.osPageSize);
+        writeMetaDataFile(archiveFile, newFile);
+
+
+        this.allMetaDataFiles.add(newFile);
+    }
+
+    private void writeMetaDataFile(MmapFile archiveFile, MmapFile metaFile) {
+        ByteBuffer bb = metaFile.sliceByteBuffer();
+        bb.putLong(archiveFile.getFileFromOffset());
+        bb.putInt(archiveFile.getLimit());
+    }
+
     private MmapFile createNewMMapFile(MmapFile currentMMapFile) {
+
         String fileName;
         if (null == currentMMapFile) {
             fileName = "0";
         } else {
             fileName = String.valueOf(currentMMapFile.getFileFromOffset() + currentMMapFile.getFileSize());
+            saveFileMetaData(this.currentMMapFile);
         }
         MmapFile newFile = new DefaultMMapFile(storePath + File.separator + fileName, this.singleFileSize, this.osPageSize);
         this.currentMMapFile = newFile;

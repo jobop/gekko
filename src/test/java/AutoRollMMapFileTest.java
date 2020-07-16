@@ -22,6 +22,7 @@ import com.github.jobop.gekko.store.file.mmap.AutoRollMMapFile;
 import com.github.jobop.gekko.store.file.SequenceFile;
 import org.junit.Assert;
 import org.junit.Test;
+import org.junit.experimental.theories.suppliers.TestedOn;
 
 public class AutoRollMMapFileTest extends BaseTest {
     @Test
@@ -74,6 +75,37 @@ public class AutoRollMMapFileTest extends BaseTest {
         //reade the data
         byte[] dest = new byte[bytes.length];
         file.getData(pos_900000, dest.length, dest);
+        String destStr = new String(dest);
+        System.out.println(destStr);
+        Assert.assertEquals(sourceStr, destStr);
+
+    }
+
+    @Test
+    public void testNewLoadRead() {
+        String dirPath = "/Users/zhengwei/Desktop/autorollfiles";
+        this.paths.add(dirPath);
+        AutoRollMMapFile file = new AutoRollMMapFile(dirPath, 1024 * 1024, 1024 * 4);
+        String sourceStr = "1sdfasdfasdfasdfasdfasdfasdfadf54545fasdfasdfasdfasdfasdfasdfadfa53345dfasdfasdfasdfasdfasdfasdfad9081nvsdfasdfasdfasdfasdfasdfadfasdfasdfasdfasdfasdfasdfasdfadfasdfasdfasdfasdfasdfasdfasdfad2";
+        byte[] bytes = sourceStr.getBytes();
+        System.out.println(bytes.length);
+        long pos_900000 = 0;
+        for (int i = 0; i < 1000000; i++) {
+            long pos = file.appendMessage(bytes);
+            if (i == 900000) {
+                pos_900000 = pos;
+                System.out.println("the pos of the 900000 data is " + pos_900000);
+            }
+        }
+
+
+        AutoRollMMapFile file2 = new AutoRollMMapFile(dirPath, 1024 * 1024, 1024 * 4);
+        file2.load();
+
+
+        //reade the data
+        byte[] dest = new byte[bytes.length];
+        file2.getData(pos_900000, dest.length, dest);
         String destStr = new String(dest);
         System.out.println(destStr);
         Assert.assertEquals(sourceStr, destStr);

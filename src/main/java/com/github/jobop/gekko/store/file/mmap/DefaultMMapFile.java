@@ -63,7 +63,7 @@ public class DefaultMMapFile extends ShutdownableReferenceCountedResource implem
         this.fileSize = fileSize;
         File file = new File(fileName);
         this.file = file;
-        this.fileFromOffset = Long.valueOf(this.file.getName());
+        this.fileFromOffset = FileUtils.fileNameToFromOffset(this.file.getName());
         FileUtils.forceMkdir(file.getParentFile());
         initFileChannel(file);
         initMappedByteBuffer();
@@ -87,6 +87,7 @@ public class DefaultMMapFile extends ShutdownableReferenceCountedResource implem
             this.fileChannel = new RandomAccessFile(file, "rw").getChannel();
         } catch (FileNotFoundException e) {
             log.error("filename=" + file.getName(), e);
+            System.out.println("filename=" + file.getName());
             throw new GekkoException(e);
         }
     }

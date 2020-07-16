@@ -110,7 +110,7 @@ public class FileStore extends AbstractStore {
             //save data
             saveData(entry);
             //save index
-            GekkoIndex index = GekkoIndex.builder().dataPos(pos).dataIndex(dataIndex).dataSize(entry.getTotalSize()).build();
+            GekkoIndex index = GekkoIndex.builder().magic(0xCAFEDADE).totalSize(GekkoIndex.INDEX_SIZE).dataPos(pos).dataIndex(dataIndex).dataSize(entry.getTotalSize()).build();
             saveIndex(index);
         }
 

@@ -30,8 +30,9 @@ public class GekkoEntry implements Checksum {
     public static int BODY_OFFSET = 4 + 4 + 8 + 8 + 8 + 8;
     public static int POS_OFFSET = 4 + 4 + 8 + 8;
 
-    int totalSize;//headerSize+bodySize
+
     int magic = 0xCAFEDADD;
+    int totalSize;//headerSize+bodySize
     long term;
     long entryIndex;
     long pos;

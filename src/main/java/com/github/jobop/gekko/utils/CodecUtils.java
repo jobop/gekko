@@ -31,8 +31,9 @@ public class CodecUtils {
     public static void encodeData(GekkoEntry entry, ByteBuffer bb) {
         bb.clear();
         int bodySize = bb.array().length;
-        bb.putInt(entry.getTotalSize());//totalsize
         bb.putInt(entry.getMagic());
+
+        bb.putInt(entry.getTotalSize());//totalsize
         bb.putLong(entry.getTerm());
         bb.putLong(entry.getEntryIndex());
         bb.putLong(entry.getPos());
@@ -68,8 +69,8 @@ public class CodecUtils {
     }
 
     public static GekkoEntry decodeData(ByteBuffer bb) {
-        int totalsize = bb.getInt();
         int magic = bb.getInt();
+        int totalsize = bb.getInt();
         long term = bb.getLong();
         long entryIndex = bb.getLong();
         long pos = bb.getLong();
@@ -85,6 +86,8 @@ public class CodecUtils {
 
     public static void encodeIndex(GekkoIndex index, ByteBuffer bb) {
         bb.clear();
+        bb.putInt(index.getMagic());
+        bb.putInt(index.getTotalSize());
         bb.putLong(index.getDataPos());
         bb.putLong(index.getDataIndex());
         bb.putInt(index.getDataSize());
@@ -93,10 +96,12 @@ public class CodecUtils {
 
 
     public static GekkoIndex decodeIndex(ByteBuffer bb) {
+        int magic=bb.getInt();//magic
+       int totalSize= bb.getInt();
         long pos = bb.getLong();
         long index = bb.getLong();
         int size = bb.getInt();
-        return GekkoIndex.builder().dataPos(pos).dataIndex(index).dataSize(size).build();
+        return GekkoIndex.builder().magic(magic).totalSize(totalSize).dataPos(pos).dataIndex(index).dataSize(size).build();
     }
 
     public static List<GekkoIndex> decodeToIndexList(List<ByteBuffer> bbs) {

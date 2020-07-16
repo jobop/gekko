@@ -96,6 +96,24 @@ public class FileStoreTest extends BaseTest {
             Assert.assertTrue(e2.isIntact());
             Assert.assertEquals(e1.checksum(), e2.checksum());
         }
+
+        System.out.println("end normal ");
+        //Test load
+        Store store2 = new FileStore(conf);
+        store2.init();
+        store2.start();
+        List<GekkoEntry> batchGetByIndexEntries2 = store2.batchGetByIndex(66666, 99999);
+        GekkoEntry lastEntry22 = batchGetByIndexEntries2.get(batchGetByIndexEntries2.size() - 1);
+        Assert.assertEquals(pos_99999, lastEntry22.getPos() + entry.getTotalSize());
+        Assert.assertEquals(99999 - 66666, batchGetByIndexEntries2.size());
+
+        for (int i = 0; i < batchGetByIndexEntries2.size(); i++) {
+            GekkoEntry e1 = entryList.get(i);
+            GekkoEntry e2 = batchGetByIndexEntries2.get(i);
+            Assert.assertTrue(e2.isIntact());
+            Assert.assertEquals(e1.checksum(), e2.checksum());
+        }
+        System.out.println("end batch");
     }
 
 }
