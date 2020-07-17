@@ -20,6 +20,7 @@ package com.github.jobop.gekko.core;
 
 
 import com.github.jobop.gekko.connector.GekkoInboundMsgHelper;
+import com.github.jobop.gekko.core.election.GekkoLeaderElector;
 import com.github.jobop.gekko.connector.GekkoNettyServer;
 import com.github.jobop.gekko.connector.GekkoNodeNettyClient;
 import com.github.jobop.gekko.core.lifecycle.LifeCycleAdpter;
@@ -34,13 +35,14 @@ import com.github.jobop.gekko.store.Store;
 
 
 public class GekkoNode extends LifeCycleAdpter {
-    private NodeState nodeState;
+    NodeState nodeState;
     GekkoNettyServer server;
     GekkoNodeNettyClient nodeClient;
     GekkoConfig conf;
     GekkoInboundProtocol inboundHelper;
     Store store;
     StateMachine stateMachine;
+    GekkoLeaderElector elector;
 
     public GekkoNode(GekkoConfig conf) {
         this.conf = conf;
@@ -52,11 +54,14 @@ public class GekkoNode extends LifeCycleAdpter {
         } else if (conf.getStoreType() == StoreEnums.ROCKDB) {
             this.store = new RockDbStore(conf);
         }
+
         this.stateMachine = conf.getStateMachine();
 
+        this.nodeClient = new GekkoNodeNettyClient(conf, nodeState);
+        this.elector = new GekkoLeaderElector(conf, nodeClient, nodeState);
         this.inboundHelper = new GekkoInboundMsgHelper(this.store, this.stateMachine);
-        this.server = new GekkoNettyServer(conf, this.inboundHelper,this. nodeState);
-        this.nodeClient = new GekkoNodeNettyClient(conf);
+        this.server = new GekkoNettyServer(conf, this.inboundHelper, this.nodeState);
+
 
 
     }
@@ -67,8 +72,8 @@ public class GekkoNode extends LifeCycleAdpter {
         this.nodeState.init();
         this.store.init();
         this.server.init();
-
         this.nodeClient.init();
+        this.elector.init();
     }
 
     @Override
@@ -77,6 +82,7 @@ public class GekkoNode extends LifeCycleAdpter {
         this.store.start();
         this.server.start();
         this.nodeClient.start();
+        this.elector.start();
     }
 
     @Override
@@ -85,5 +91,6 @@ public class GekkoNode extends LifeCycleAdpter {
         this.store.shutdown();
         this.server.shutdown();
         this.nodeClient.shutdown();
+        this.elector.shutdown();
     }
 }

@@ -16,25 +16,29 @@
  *
  * Created by CuttleFish on 2020/7/2.
  */
-package com.github.jobop.gekko.protocols.message.node;
+package com.github.jobop.gekko.connector.processors;
 
-import com.github.jobop.gekko.protocols.message.GekkoEntry;
-import lombok.Builder;
-import lombok.Data;
-import lombok.Singular;
+import com.alipay.remoting.AsyncContext;
+import com.alipay.remoting.BizContext;
+import com.github.jobop.gekko.protocols.GekkoInboundProtocol;
+import com.github.jobop.gekko.protocols.message.api.PullEntryReq;
+import com.github.jobop.gekko.protocols.message.api.PullEntryResp;
 
-import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.List;
+/**
+ * process the pull req from follower
+ */
+public class PullEntryProcessor extends DefaultProcessor<PullEntryReq> {
 
+    public PullEntryProcessor(GekkoInboundProtocol helper) {
+        super(helper);
+    }
 
-@Data
-@Builder
-public class HeartBeatReq implements Serializable {
-    /**
-     * for serialization
-     */
-    private static final long serialVersionUID = -1288207208017808618L;
-    private String remoteNodeId;
-    private long termId;
+    public void handleRequest(BizContext bizCtx, AsyncContext asyncCtx, PullEntryReq request) {
+        PullEntryResp reps = helper.handleGetEntries(request);
+        asyncCtx.sendResponse(reps);
+    }
+
+    public String interest() {
+        return PullEntryReq.class.getName();
+    }
 }

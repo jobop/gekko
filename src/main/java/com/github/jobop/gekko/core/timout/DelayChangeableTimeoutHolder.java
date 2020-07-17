@@ -1,3 +1,4 @@
+
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -14,19 +15,25 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *
- * Created by CuttleFish on 2020/7/3.
+ * Created by CuttleFish on 2020/7/16.
  */
-package com.github.jobop.gekko.protocols.message.node;
 
-import lombok.Builder;
-import lombok.Data;
+package com.github.jobop.gekko.core.timout;
 
-import java.io.Serializable;
+import io.netty.util.Timeout;
+import io.netty.util.TimerTask;
 
+import java.util.concurrent.TimeUnit;
 
-@Data
-@Builder
-public class VoteReq implements Serializable {
-    private long term;
-    private String candidateId;
+public class DelayChangeableTimeoutHolder extends RefreshableTimeoutHolder {
+    public DelayChangeableTimeoutHolder(TimerTask task, long delay, TimeUnit unit) {
+        super(task, delay, unit);
+    }
+
+    public Timeout refresh(long newDelay, TimeUnit newUnit) {
+        this.delay = newDelay;
+        this.unit = newUnit;
+        return this.refresh();
+    }
+
 }

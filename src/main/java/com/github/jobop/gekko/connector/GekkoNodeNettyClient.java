@@ -21,15 +21,19 @@
 package com.github.jobop.gekko.connector;
 
 
+import com.alipay.remoting.InvokeCallback;
 import com.alipay.remoting.exception.RemotingException;
 import com.alipay.remoting.rpc.RpcClient;
 import com.github.jobop.gekko.core.GekkoConfig;
+import com.github.jobop.gekko.core.election.VoteCollector;
 import com.github.jobop.gekko.core.lifecycle.LifeCycleAdpter;
 import com.github.jobop.gekko.core.metadata.NodeState;
 import com.github.jobop.gekko.core.metadata.Peer;
 import com.github.jobop.gekko.protocols.GekkoNodeConnectProtocol;
 import com.github.jobop.gekko.protocols.message.GekkoEntry;
+import com.github.jobop.gekko.protocols.message.node.HeartBeatReq;
 import com.github.jobop.gekko.protocols.message.node.PushEntryReq;
+import com.github.jobop.gekko.protocols.message.node.VoteReq;
 
 import java.util.List;
 import java.util.Map;
@@ -72,7 +76,33 @@ public class GekkoNodeNettyClient extends LifeCycleAdpter implements GekkoNodeCo
 
     @Override
     public void sendHeartBeat() {
+        for (Map.Entry<String, Peer> e : this.nodeState.getPeersMap().entrySet()) {
+            String peerId = e.getKey();
+            Peer peer = e.getValue();
+            try {
+                orderNodesRpcClient.oneway(peer.getHost() + ":" + peer.getPort(), HeartBeatReq.builder().remoteNodeId(nodeState.getSelfId()).termId(nodeState.getTerm()).build());
+            } catch (RemotingException remotingException) {
+                remotingException.printStackTrace();
+            } catch (InterruptedException interruptedException) {
+                interruptedException.printStackTrace();
+            }
+        }
+    }
 
+    @Override
+    public void reqVote(VoteCollector voteCollector) {
+        for (Map.Entry<String, Peer> e : this.nodeState.getPeersMap().entrySet()) {
+            String peerId = e.getKey();
+            Peer peer = e.getValue();
+            try {
+                //FIXME:
+                orderNodesRpcClient.invokeWithCallback(peer.getHost() + ":" + peer.getPort(), VoteReq.builder().term(nodeState.getTerm() + 1).candidateId(nodeState.getSelfId()).build(), voteCollector, 99999);
+            } catch (RemotingException remotingException) {
+                remotingException.printStackTrace();
+            } catch (InterruptedException interruptedException) {
+                interruptedException.printStackTrace();
+            }
+        }
     }
 
     @Override

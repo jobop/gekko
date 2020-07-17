@@ -27,13 +27,13 @@ import io.netty.util.TimerTask;
 import java.util.concurrent.TimeUnit;
 
 
-public class RefreshableTimeoutChecker {
+public class RefreshableTimeoutHolder {
     TimerTask task;
     long delay;
     TimeUnit unit;
     Timeout timeout;
 
-    public RefreshableTimeoutChecker(TimerTask task, long delay, TimeUnit unit) {
+    public RefreshableTimeoutHolder(TimerTask task, long delay, TimeUnit unit) {
         this.task = task;
         this.delay = delay;
         this.unit = unit;
@@ -44,6 +44,7 @@ public class RefreshableTimeoutChecker {
         this.timeout = timeout;
         return timeout;
     }
+
 
     public Timeout refresh() {
         if (null != timeout) {

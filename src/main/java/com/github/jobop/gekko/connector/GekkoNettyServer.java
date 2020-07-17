@@ -20,10 +20,13 @@
 package com.github.jobop.gekko.connector;
 
 
-import com.alipay.remoting.rpc.RpcConnectionFactory;
 import com.alipay.remoting.rpc.RpcServer;
-import com.github.jobop.gekko.connector.processors.GetEntryProcessor;
+import com.github.jobop.gekko.connector.processors.PullEntryProcessor;
+import com.github.jobop.gekko.connector.processors.HeartBeatProcessor;
+import com.github.jobop.gekko.connector.processors.PushEntriesProcessor;
+import com.github.jobop.gekko.connector.processors.ReqVoteProcessor;
 import com.github.jobop.gekko.core.GekkoConfig;
+import com.github.jobop.gekko.core.election.GekkoLeaderElector;
 import com.github.jobop.gekko.core.lifecycle.LifeCycleAdpter;
 import com.github.jobop.gekko.core.metadata.NodeState;
 import com.github.jobop.gekko.core.metadata.Peer;
@@ -37,18 +40,26 @@ public class GekkoNettyServer extends LifeCycleAdpter {
     NodeState nodeState;
     GekkoConfig conf;
     RpcServer rpcServer;
+    GekkoLeaderElector elector;
 
-    public GekkoNettyServer(GekkoConfig conf, GekkoInboundProtocol inboundHelper, NodeState nodeState) {
+    public GekkoNettyServer(GekkoConfig conf, GekkoInboundProtocol inboundHelper, NodeState nodeState, GekkoLeaderElector elector) {
         this.inboundHelper = inboundHelper;
         this.conf = conf;
         this.nodeState = nodeState;
+        this.elector = elector;
     }
 
     public void init() {
         Peer selfPeer = this.nodeState.getPeersMap().get(conf.getSelfId());
         rpcServer = new RpcServer(selfPeer.getPort());
 
-        rpcServer.registerUserProcessor(new GetEntryProcessor(inboundHelper));
+        rpcServer.registerUserProcessor(new PullEntryProcessor(inboundHelper));
+        rpcServer.registerUserProcessor(new HeartBeatProcessor(inboundHelper, elector));
+        rpcServer.registerUserProcessor(new PushEntriesProcessor(inboundHelper, elector));
+        rpcServer.registerUserProcessor(new ReqVoteProcessor(inboundHelper, elector));
+
+//        rpcServer.registerUserProcessor(new );
+
     }
 
     public void start() {

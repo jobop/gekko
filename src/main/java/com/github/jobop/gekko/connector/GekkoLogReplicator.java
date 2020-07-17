@@ -1,3 +1,4 @@
+
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -14,29 +15,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *
- * Created by CuttleFish on 2020/7/2.
+ * Created by CuttleFish on 2020/7/16.
  */
-package com.github.jobop.gekko.connector.processors;
 
-import com.alipay.remoting.AsyncContext;
-import com.alipay.remoting.BizContext;
-import com.github.jobop.gekko.protocols.GekkoInboundProtocol;
-import com.github.jobop.gekko.protocols.message.api.PullEntryReq;
-import com.github.jobop.gekko.protocols.message.api.PullEntryResp;
+package com.github.jobop.gekko.connector;
 
-
-public class GetEntryProcessor extends DefaultProcessor<PullEntryReq> {
-
-    public GetEntryProcessor(GekkoInboundProtocol helper) {
-        super(helper);
-    }
-
-    public void handleRequest(BizContext bizCtx, AsyncContext asyncCtx, PullEntryReq request) {
-        PullEntryResp reps = helper.getEntries(request);
-        asyncCtx.sendResponse(reps);
-    }
-
-    public String interest() {
-        return PullEntryReq.class.getName();
-    }
+public class GekkoLogReplicator {
 }
