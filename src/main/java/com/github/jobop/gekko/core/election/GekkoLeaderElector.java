@@ -33,6 +33,9 @@ import lombok.Data;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 
+/**
+ * the core logic of election
+ */
 @Data
 public class GekkoLeaderElector extends LifeCycleAdpter {
     GekkoConfig conf;
@@ -127,16 +130,19 @@ public class GekkoLeaderElector extends LifeCycleAdpter {
     }
 
 
-    public void becomeAFollower(long term,String leaderId) {
+    public void becomeAFollower(long term, String leaderId) {
         this.state.setRole(RoleEnum.FOLLOWER);
         this.state.getTermAtomic().set(term);
-        this.state.setLeaderId(leaderId);;
+        this.state.setLeaderId(leaderId);
+        ;
         this.cancelAllVoteCollectors();
         this.stoptSendHeartBeatToFollower();
         this.resetElectionTimeout();
     }
 
     public void becomeALeader() {
+        this.state.setLeaderId(state.getSelfId());
+        this.state.setRole(RoleEnum.LEADER);
         this.cancelAllVoteCollectors();
         this.stopElectionTimeout();
         this.refreshSendHeartBeatToFollower();

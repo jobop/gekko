@@ -72,8 +72,6 @@ public class VoteCollector implements InvokeCallback {
                 if (agreeSet.size() + 1 > (nodeState.getPeersMap().size() / 2)) {
                     //upgrade to leader and disable this collector
                     if (available.compareAndSet(true, false)) {
-                        this.nodeState.setLeaderId(nodeState.getSelfId());
-                        this.nodeState.setRole(RoleEnum.LEADER);
 //                        this.nodeState.getTermAtomic().compareAndSet(this.voteTerm, this.voteTerm + 1);
                         this.elector.becomeALeader();
                     }
