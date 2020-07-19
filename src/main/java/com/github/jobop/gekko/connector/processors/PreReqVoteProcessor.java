@@ -22,9 +22,10 @@ import com.alipay.remoting.AsyncContext;
 import com.alipay.remoting.BizContext;
 import com.github.jobop.gekko.core.election.GekkoLeaderElector;
 import com.github.jobop.gekko.core.metadata.NodeState;
-import com.github.jobop.gekko.enums.RoleEnum;
 import com.github.jobop.gekko.enums.VoteResultEnums;
 import com.github.jobop.gekko.protocols.GekkoInboundProtocol;
+import com.github.jobop.gekko.protocols.message.node.PreVoteReq;
+import com.github.jobop.gekko.protocols.message.node.PreVoteResp;
 import com.github.jobop.gekko.protocols.message.node.VoteReq;
 import com.github.jobop.gekko.protocols.message.node.VoteResp;
 import com.github.jobop.gekko.utils.ElectionUtils;
@@ -32,31 +33,27 @@ import com.github.jobop.gekko.utils.ElectionUtils;
 /**
  * process the vote req from condicatior
  */
-public class ReqVoteProcessor extends DefaultProcessor<VoteReq> {
+public class PreReqVoteProcessor extends DefaultProcessor<PreVoteReq> {
     GekkoLeaderElector elector;
 
-    public ReqVoteProcessor(GekkoInboundProtocol helper, GekkoLeaderElector elector) {
+    public PreReqVoteProcessor(GekkoInboundProtocol helper, GekkoLeaderElector elector) {
         super(helper);
         this.elector = elector;
     }
 
-    public void handleRequest(BizContext bizCtx, AsyncContext asyncCtx, VoteReq request) {
+    public void handleRequest(BizContext bizCtx, AsyncContext asyncCtx, PreVoteReq request) {
         NodeState nodeState = elector.getState();
         long nowTerm = nodeState.getTerm();
         long voteTerm = request.getTerm();
 
         if (ElectionUtils.judgVote(nowTerm, voteTerm)) {
-            if (nodeState.getTermAtomic().compareAndSet(nowTerm, voteTerm)) {
-                asyncCtx.sendResponse(VoteResp.builder().term(voteTerm).voteMemberId(nodeState.getSelfId()).result(VoteResultEnums.AGREE).build());
-            } else {
-                asyncCtx.sendResponse(VoteResp.builder().term(voteTerm).voteMemberId(nodeState.getSelfId()).result(VoteResultEnums.REJECT).build());
-            }
+            asyncCtx.sendResponse(PreVoteResp.builder().term(voteTerm).voteMemberId(nodeState.getSelfId()).result(VoteResultEnums.AGREE).build());
         } else {
-            asyncCtx.sendResponse(VoteResp.builder().term(voteTerm).voteMemberId(nodeState.getSelfId()).result(VoteResultEnums.REJECT).build());
+            asyncCtx.sendResponse(PreVoteResp.builder().term(voteTerm).voteMemberId(nodeState.getSelfId()).result(VoteResultEnums.REJECT).build());
         }
     }
 
     public String interest() {
-        return VoteReq.class.getName();
+        return PreVoteReq.class.getName();
     }
 }

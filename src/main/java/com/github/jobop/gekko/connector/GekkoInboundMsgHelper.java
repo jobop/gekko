@@ -38,6 +38,7 @@ public class GekkoInboundMsgHelper implements GekkoInboundProtocol {
 
     /**
      * from flower or user
+     *
      * @param req
      * @return
      */
@@ -49,16 +50,19 @@ public class GekkoInboundMsgHelper implements GekkoInboundProtocol {
 
     /**
      * from user
+     *
      * @param req
      * @return
      */
     @Override
     public AppendEntryResp handleAppendEntry(AppendEntryReq req) {
+
         return null;
     }
 
     /**
      * from flower or user
+     *
      * @param req
      * @return
      */
@@ -70,6 +74,7 @@ public class GekkoInboundMsgHelper implements GekkoInboundProtocol {
 
     /**
      * from nodes
+     *
      * @param req
      * @return
      */
@@ -80,6 +85,7 @@ public class GekkoInboundMsgHelper implements GekkoInboundProtocol {
 
     /**
      * from nodes
+     *
      * @param req
      * @return
      */
@@ -89,12 +95,15 @@ public class GekkoInboundMsgHelper implements GekkoInboundProtocol {
     }
 
     /**
+     * TODO:
      * from leader
+     *
      * @param req
      * @return
      */
     @Override
     public PushEntryResp handlePushDatas(PushEntryReq req) {
+        this.store.append(req.getEntries().get(0));
         return null;
     }
 }

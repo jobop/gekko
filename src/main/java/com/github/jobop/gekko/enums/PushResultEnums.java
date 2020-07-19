@@ -16,9 +16,10 @@
  *
  * Created by CuttleFish on 2020/7/3.
  */
+
 package com.github.jobop.gekko.enums;
 
 
-public enum RoleEnum {
-    FOLLOWER, CANDIDATE,PRE_CANDIDATE, LEADER
+public enum PushResultEnums {
+    AGREE,REJECT
 }

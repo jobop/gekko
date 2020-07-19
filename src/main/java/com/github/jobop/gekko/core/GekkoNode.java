@@ -25,6 +25,7 @@ import com.github.jobop.gekko.connector.GekkoNettyServer;
 import com.github.jobop.gekko.connector.GekkoNodeNettyClient;
 import com.github.jobop.gekko.core.lifecycle.LifeCycleAdpter;
 import com.github.jobop.gekko.core.metadata.NodeState;
+import com.github.jobop.gekko.core.replication.EntriesPusher;
 import com.github.jobop.gekko.core.statemachine.StateMachine;
 import com.github.jobop.gekko.enums.StoreEnums;
 import com.github.jobop.gekko.protocols.GekkoInboundProtocol;
@@ -43,6 +44,7 @@ public class GekkoNode extends LifeCycleAdpter {
     Store store;
     StateMachine stateMachine;
     GekkoLeaderElector elector;
+    EntriesPusher pusher;
 
     public GekkoNode(GekkoConfig conf) {
         this.conf = conf;
@@ -59,6 +61,7 @@ public class GekkoNode extends LifeCycleAdpter {
 
         this.nodeClient = new GekkoNodeNettyClient(conf, nodeState);
         this.elector = new GekkoLeaderElector(conf, nodeClient, nodeState);
+        this.pusher=new EntriesPusher(conf, nodeClient, nodeState);
         this.inboundHelper = new GekkoInboundMsgHelper(this.store, this.stateMachine);
         this.server = new GekkoNettyServer(conf, this.inboundHelper, this.nodeState,this.elector);
 
@@ -74,6 +77,7 @@ public class GekkoNode extends LifeCycleAdpter {
         this.server.init();
         this.nodeClient.init();
         this.elector.init();
+        this.pusher.init();
     }
 
     @Override
@@ -83,6 +87,7 @@ public class GekkoNode extends LifeCycleAdpter {
         this.server.start();
         this.nodeClient.start();
         this.elector.start();
+        this.pusher.start();
     }
 
     @Override
@@ -92,5 +97,6 @@ public class GekkoNode extends LifeCycleAdpter {
         this.server.shutdown();
         this.nodeClient.shutdown();
         this.elector.shutdown();
+        this.pusher.shutdown();
     }
 }

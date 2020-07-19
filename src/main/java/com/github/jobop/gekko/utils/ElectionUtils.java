@@ -1,3 +1,4 @@
+
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -14,11 +15,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *
- * Created by CuttleFish on 2020/7/3.
+ * Created by CuttleFish on 2020/7/19.
  */
-package com.github.jobop.gekko.enums;
 
+package com.github.jobop.gekko.utils;
 
-public enum RoleEnum {
-    FOLLOWER, CANDIDATE,PRE_CANDIDATE, LEADER
+import com.github.jobop.gekko.core.metadata.NodeState;
+import com.github.jobop.gekko.enums.VoteResultEnums;
+import com.github.jobop.gekko.protocols.message.node.VoteResp;
+
+public class ElectionUtils {
+    public static boolean judgVote( long nowTerm, long voteTerm) {
+        if (nowTerm < voteTerm) {
+            return true;
+        } else {
+            return false;
+        }
+
+    }
 }

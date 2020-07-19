@@ -16,9 +16,17 @@
  *
  * Created by CuttleFish on 2020/7/3.
  */
-package com.github.jobop.gekko.enums;
+package com.github.jobop.gekko.protocols.message.node;
+
+import lombok.Builder;
+import lombok.Data;
+
+import java.io.Serializable;
 
 
-public enum RoleEnum {
-    FOLLOWER, CANDIDATE,PRE_CANDIDATE, LEADER
+@Data
+@Builder
+public class PreVoteReq implements Serializable {
+    private long term;
+    private String candidateId;
 }

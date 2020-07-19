@@ -22,29 +22,32 @@ import com.alipay.remoting.AsyncContext;
 import com.alipay.remoting.BizContext;
 import com.github.jobop.gekko.core.election.GekkoLeaderElector;
 import com.github.jobop.gekko.protocols.GekkoInboundProtocol;
-import com.github.jobop.gekko.protocols.message.node.PushEntryReq;
-import com.github.jobop.gekko.protocols.message.node.PushEntryResp;
+import com.github.jobop.gekko.protocols.message.api.AppendEntryReq;
+import com.github.jobop.gekko.protocols.message.api.AppendEntryResp;
 
 /**
  * process the push req from leader
  */
-public class PushEntriesProcessor extends DefaultProcessor<PushEntryReq> {
+public class AppendEntryProcessor extends DefaultProcessor<AppendEntryReq> {
     GekkoLeaderElector elector;
 
-    public PushEntriesProcessor(GekkoInboundProtocol helper, GekkoLeaderElector elector) {
+    public AppendEntryProcessor(GekkoInboundProtocol helper, GekkoLeaderElector elector) {
         super(helper);
         this.elector = elector;
     }
 
-    public void handleRequest(BizContext bizCtx, AsyncContext asyncCtx, PushEntryReq request) {
-        if (request.getTerm() < elector.getState().getTerm()) {
-            return;
-        }
-        PushEntryResp resp = helper.handlePushDatas(request);
+    /**
+     * TODO:
+     * @param bizCtx
+     * @param asyncCtx
+     * @param request
+     */
+    public void handleRequest(BizContext bizCtx, AsyncContext asyncCtx, AppendEntryReq request) {
+        AppendEntryResp resp = helper.handleAppendEntry(request);
         asyncCtx.sendResponse(resp);
     }
 
     public String interest() {
-        return PushEntryReq.class.getName();
+        return AppendEntryReq.class.getName();
     }
 }

@@ -25,14 +25,17 @@ import com.alipay.remoting.InvokeCallback;
 import com.alipay.remoting.exception.RemotingException;
 import com.alipay.remoting.rpc.RpcClient;
 import com.github.jobop.gekko.core.GekkoConfig;
+import com.github.jobop.gekko.core.election.PreVoteCollector;
 import com.github.jobop.gekko.core.election.VoteCollector;
 import com.github.jobop.gekko.core.lifecycle.LifeCycleAdpter;
 import com.github.jobop.gekko.core.metadata.NodeState;
 import com.github.jobop.gekko.core.metadata.Peer;
+import com.github.jobop.gekko.core.replication.AcceptCollector;
 import com.github.jobop.gekko.enums.RoleEnum;
 import com.github.jobop.gekko.protocols.GekkoNodeConnectProtocol;
 import com.github.jobop.gekko.protocols.message.GekkoEntry;
 import com.github.jobop.gekko.protocols.message.node.HeartBeatReq;
+import com.github.jobop.gekko.protocols.message.node.PreVoteReq;
 import com.github.jobop.gekko.protocols.message.node.PushEntryReq;
 import com.github.jobop.gekko.protocols.message.node.VoteReq;
 import lombok.extern.slf4j.Slf4j;
@@ -51,6 +54,8 @@ public class GekkoNodeNettyClient extends LifeCycleAdpter implements GekkoNodeCo
     //    ConcurrentHashMap<String, RpcClient> orderNodesRpcClient = new ConcurrentHashMap<String, RpcClient>();
     RpcClient orderNodesRpcClient;
     static int WAIT_FOR_VOTE_TIME_OUT = 150;
+
+    static int WAIT_FOR_PUSH_TIME_OUT = 150;
 
     public GekkoNodeNettyClient(GekkoConfig conf, NodeState nodeState) {
         this.conf = conf;
@@ -80,15 +85,32 @@ public class GekkoNodeNettyClient extends LifeCycleAdpter implements GekkoNodeCo
 
     @Override
     public void sendHeartBeat() {
-        if(this.nodeState.getRole()!= RoleEnum.LEADER){
+        if (this.nodeState.getRole() != RoleEnum.LEADER) {
             log.warn("not a leader can not send hearbeat!");
-            return ;
+            return;
         }
         for (Map.Entry<String, Peer> e : this.nodeState.getPeersMap().entrySet()) {
             String peerId = e.getKey();
             Peer peer = e.getValue();
             try {
                 orderNodesRpcClient.oneway(peer.getHost() + ":" + peer.getPort(), HeartBeatReq.builder().remoteNodeId(nodeState.getSelfId()).term(nodeState.getTerm()).build());
+            } catch (RemotingException remotingException) {
+                remotingException.printStackTrace();
+            } catch (InterruptedException interruptedException) {
+                interruptedException.printStackTrace();
+            }
+        }
+    }
+
+
+    @Override
+    public void preVote(PreVoteCollector preVoteCollector) {
+        for (Map.Entry<String, Peer> e : this.nodeState.getPeersMap().entrySet()) {
+            String peerId = e.getKey();
+            Peer peer = e.getValue();
+            try {
+                //FIXME:
+                orderNodesRpcClient.invokeWithCallback(peer.getHost() + ":" + peer.getPort(), PreVoteReq.builder().term(preVoteCollector.getVoteTerm()).candidateId(nodeState.getSelfId()).build(), preVoteCollector, WAIT_FOR_VOTE_TIME_OUT);
             } catch (RemotingException remotingException) {
                 remotingException.printStackTrace();
             } catch (InterruptedException interruptedException) {
@@ -114,17 +136,17 @@ public class GekkoNodeNettyClient extends LifeCycleAdpter implements GekkoNodeCo
     }
 
     @Override
-    public void pushDatas(List<GekkoEntry> entries) {
-        if(this.nodeState.getRole()!= RoleEnum.LEADER){
+    public void pushDatas(List<GekkoEntry> entries, AcceptCollector callback) {
+        if (this.nodeState.getRole() != RoleEnum.LEADER) {
             log.warn("not a leader can not push data!");
-            return ;
+            return;
         }
         for (Map.Entry<String, Peer> e : this.nodeState.getPeersMap().entrySet()) {
             String peerId = e.getKey();
             Peer peer = e.getValue();
             //TODO:
             try {
-                orderNodesRpcClient.oneway(peer.getHost() + ":" + peer.getPort(), PushEntryReq.builder().entries(entries).build());
+                orderNodesRpcClient.invokeWithCallback(peer.getHost() + ":" + peer.getPort(), PushEntryReq.builder().entries(entries).build(), callback, WAIT_FOR_PUSH_TIME_OUT);
             } catch (RemotingException remotingException) {
                 remotingException.printStackTrace();
             } catch (InterruptedException interruptedException) {

@@ -19,7 +19,6 @@
 package com.github.jobop.gekko.store.file.mmap;
 
 
-import com.github.jobop.gekko.core.exception.GekkoException;
 import com.github.jobop.gekko.enums.ResultEnums;
 import com.github.jobop.gekko.store.file.ComposeMMapFile;
 import com.github.jobop.gekko.store.file.MmapFile;
@@ -29,9 +28,9 @@ import com.github.jobop.gekko.utils.FileUtils;
 import com.github.jobop.gekko.utils.PreConditions;
 import lombok.extern.slf4j.Slf4j;
 
-import java.io.*;
+import java.io.File;
+import java.io.FilenameFilter;
 import java.nio.ByteBuffer;
-import java.nio.channels.FileChannel;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;

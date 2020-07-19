@@ -18,6 +18,7 @@
  */
 package com.github.jobop.gekko.protocols.message.node;
 
+import com.github.jobop.gekko.enums.PushResultEnums;
 import com.github.jobop.gekko.enums.ResultEnums;
 import com.github.jobop.gekko.protocols.message.GekkoEntry;
 import lombok.Data;
@@ -28,6 +29,8 @@ import java.util.List;
 
 @Data
 public class PushEntryResp implements Serializable {
-
-    String code;
+    long term;
+    long index;
+    String acceptNodeId;
+    PushResultEnums result;
 }

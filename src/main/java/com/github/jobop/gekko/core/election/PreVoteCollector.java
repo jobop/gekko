@@ -22,11 +22,13 @@ package com.github.jobop.gekko.core.election;
 
 import com.alipay.remoting.InvokeCallback;
 import com.github.jobop.gekko.core.metadata.NodeState;
+import com.github.jobop.gekko.enums.RoleEnum;
 import com.github.jobop.gekko.enums.VoteResultEnums;
 import com.github.jobop.gekko.protocols.message.node.VoteResp;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 
+import java.lang.ref.WeakReference;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
@@ -35,7 +37,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 @Slf4j
 @Data
-public class VoteCollector implements InvokeCallback {
+public class PreVoteCollector implements InvokeCallback {
     NodeState nodeState;
     private long voteTerm;
 
@@ -45,7 +47,7 @@ public class VoteCollector implements InvokeCallback {
     private volatile AtomicBoolean available = new AtomicBoolean(true);
     GekkoLeaderElector elector;
 
-    public VoteCollector(NodeState nodeState, GekkoLeaderElector elector) {
+    public PreVoteCollector(NodeState nodeState, GekkoLeaderElector elector) {
         this.nodeState = nodeState;
         this.voteTerm = nodeState.getTerm();
         agreeSet.add(nodeState.getSelfId());
@@ -59,8 +61,8 @@ public class VoteCollector implements InvokeCallback {
             log.warn("this vote term has expired! term=" + this.getVoteTerm());
             return;
         }
-        if (this.voteTerm < nodeState.getTerm()) {
-            log.warn("this vote term has expired! term=" + this.getVoteTerm());
+        if (this.voteTerm < nodeState.getTerm() + 1) {
+            log.warn("this pre vote term has expired! term=" + this.getVoteTerm());
             return;
         }
 
@@ -72,13 +74,23 @@ public class VoteCollector implements InvokeCallback {
                     //upgrade to leader and disable this collector
                     if (available.compareAndSet(true, false)) {
 //                        this.nodeState.getTermAtomic().compareAndSet(this.voteTerm, this.voteTerm + 1);
-                        this.elector.becomeALeader();
+                        reqToRealVote();
                     }
                 }
             }
         }
 
 
+    }
+
+    private void reqToRealVote() {
+        nodeState.setRole(RoleEnum.CANDIDATE);
+        nodeState.getTermAtomic().incrementAndGet();
+        VoteCollector voteCollector = new VoteCollector(nodeState, elector);
+        elector.getVoteCollectors().add(new WeakReference<>(voteCollector));
+        elector.getClient().reqVote(voteCollector);
+        //when no outer trigger the reset,it will reset by itself
+        elector.resetElectionTimeout();
     }
 
     @Override

@@ -30,6 +30,7 @@ import io.netty.util.Timeout;
 import io.netty.util.TimerTask;
 import lombok.Data;
 
+import java.lang.ref.WeakReference;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 
@@ -41,12 +42,12 @@ public class GekkoLeaderElector extends LifeCycleAdpter {
     GekkoConfig conf;
     GekkoNodeNettyClient client;
     NodeState state;
-
+    private Set<WeakReference<VoteCollector>> voteCollectors = Collections.synchronizedSet(new HashSet<>());
+    private Set<WeakReference<PreVoteCollector>> preVoteCollectors = Collections.synchronizedSet(new HashSet<>());
     DelayChangeableTimeoutHolder electionTimeoutChecker;
 
     RefreshableTimeoutHolder heartBeatSender;
 
-    private Set<VoteCollector> voteCollectors = Collections.synchronizedSet(new HashSet<>());
 
     static int MAX_ELECTION_TIMEOUT = 300;
     static int MIN_ELECTION_TIMEOUT = 150;
@@ -68,11 +69,10 @@ public class GekkoLeaderElector extends LifeCycleAdpter {
         electionTimeoutChecker = new DelayChangeableTimeoutHolder(new TimerTask() {
             @Override
             public void run(Timeout timeout) throws Exception {
-                state.setRole(RoleEnum.CANDIDATE);
-                state.getTermAtomic().incrementAndGet();
-                VoteCollector voteCollector = new VoteCollector(state, thisElector);
-                voteCollectors.add(voteCollector);
-                client.reqVote(voteCollector);
+                state.setRole(RoleEnum.PRE_CANDIDATE);
+                PreVoteCollector prevoteCollector = new PreVoteCollector(state, thisElector);
+                preVoteCollectors.add(new WeakReference<>(prevoteCollector));
+                client.preVote(prevoteCollector);
                 //when no outer trigger the reset,it will reset by itself
                 thisElector.resetElectionTimeout();
             }
@@ -106,10 +106,21 @@ public class GekkoLeaderElector extends LifeCycleAdpter {
     public void cancelAllVoteCollectors() {
         state.setRole(RoleEnum.FOLLOWER);
         if (!voteCollectors.isEmpty()) {
-            for (VoteCollector collector : voteCollectors) {
-                collector.disAble();
+            for (WeakReference<VoteCollector> wf : voteCollectors) {
+                if (null != wf.get()) {
+                    wf.get().disAble();
+                }
             }
             voteCollectors.clear();
+        }
+
+        if (!preVoteCollectors.isEmpty()) {
+            for (WeakReference<PreVoteCollector> wf : preVoteCollectors) {
+                if (null != wf.get()) {
+                    wf.get().disAble();
+                }
+            }
+            preVoteCollectors.clear();
         }
     }
 
@@ -134,7 +145,6 @@ public class GekkoLeaderElector extends LifeCycleAdpter {
         this.state.setRole(RoleEnum.FOLLOWER);
         this.state.getTermAtomic().set(term);
         this.state.setLeaderId(leaderId);
-        ;
         this.cancelAllVoteCollectors();
         this.stoptSendHeartBeatToFollower();
         this.resetElectionTimeout();
