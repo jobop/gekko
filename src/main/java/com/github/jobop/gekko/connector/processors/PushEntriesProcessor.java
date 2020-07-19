@@ -40,6 +40,7 @@ public class PushEntriesProcessor extends DefaultProcessor<PushEntryReq> {
         if (request.getTerm() < elector.getState().getTerm()) {
             return;
         }
+        this.elector.becomeAFollower(request.getTerm(), request.getRemoteNodeId());
         PushEntryResp resp = helper.handlePushDatas(request);
         asyncCtx.sendResponse(resp);
     }

@@ -45,7 +45,7 @@ public class EntriesPusher extends LifeCycleAdpter {
     public void append(GekkoEntry entry, Consumer callback) {
         List<GekkoEntry> entries = new ArrayList<GekkoEntry>();
         entries.add(entry);
-        client.pushDatas(entries, new AcceptCollector(this.state, callback));
+        client.pushDatas(entries, new AcceptCollector(entry,this.state, callback));
     }
 
 }

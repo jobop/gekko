@@ -21,6 +21,7 @@ package com.github.jobop.gekko.connector.processors;
 import com.alipay.remoting.AsyncContext;
 import com.alipay.remoting.BizContext;
 import com.github.jobop.gekko.core.election.GekkoLeaderElector;
+import com.github.jobop.gekko.enums.ResultEnums;
 import com.github.jobop.gekko.protocols.GekkoInboundProtocol;
 import com.github.jobop.gekko.protocols.message.api.AppendEntryReq;
 import com.github.jobop.gekko.protocols.message.api.AppendEntryResp;
@@ -37,14 +38,16 @@ public class AppendEntryProcessor extends DefaultProcessor<AppendEntryReq> {
     }
 
     /**
-     * TODO:
      * @param bizCtx
      * @param asyncCtx
      * @param request
      */
     public void handleRequest(BizContext bizCtx, AsyncContext asyncCtx, AppendEntryReq request) {
-        AppendEntryResp resp = helper.handleAppendEntry(request);
-        asyncCtx.sendResponse(resp);
+        helper.handleAppendEntry(request, entry -> {
+            if (entry.getPos() != -1) {
+                asyncCtx.sendResponse(AppendEntryResp.builder().index(entry.getEntryIndex()).resultCode(ResultEnums.SUCCESS).build());
+            }
+        });
     }
 
     public String interest() {

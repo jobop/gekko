@@ -24,6 +24,7 @@ import com.alipay.remoting.InvokeCallback;
 import com.github.jobop.gekko.core.metadata.NodeState;
 import com.github.jobop.gekko.enums.PushResultEnums;
 import com.github.jobop.gekko.enums.VoteResultEnums;
+import com.github.jobop.gekko.protocols.message.GekkoEntry;
 import com.github.jobop.gekko.protocols.message.node.PushEntryResp;
 import com.github.jobop.gekko.protocols.message.node.VoteResp;
 
@@ -39,10 +40,12 @@ public class AcceptCollector implements InvokeCallback {
     private Consumer callback;
     private Set<String> agreeSet = Collections.synchronizedSet(new HashSet<>());
     private AtomicBoolean hasNotify = new AtomicBoolean(false);
+    private GekkoEntry entry;
 
-    public AcceptCollector(NodeState nodeState, Consumer callback) {
+    public AcceptCollector(GekkoEntry entry,NodeState nodeState, Consumer callback) {
         this.callback = callback;
         this.nodeState = nodeState;
+        this.entry=entry;
     }
 
 
@@ -53,7 +56,7 @@ public class AcceptCollector implements InvokeCallback {
             agreeSet.add(resp.getAcceptNodeId());
             if (agreeSet.size() > (nodeState.getPeersMap().size() / 2)) {
                 if (hasNotify.compareAndSet(false, true)) {
-                    callback.accept(resp.getIndex());
+                    callback.accept(this.entry);
                 }
             }
         }

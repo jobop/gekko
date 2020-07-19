@@ -29,4 +29,5 @@ import java.io.Serializable;
 public class PreVoteReq implements Serializable {
     private long term;
     private String candidateId;
+    private long lastIndex;
 }

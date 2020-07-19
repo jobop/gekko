@@ -20,20 +20,33 @@
 package com.github.jobop.gekko.connector;
 
 
+import com.alipay.remoting.AsyncContext;
+import com.alipay.remoting.BizContext;
+import com.github.jobop.gekko.core.metadata.NodeState;
+import com.github.jobop.gekko.core.replication.EntriesPusher;
 import com.github.jobop.gekko.core.statemachine.StateMachine;
+import com.github.jobop.gekko.enums.PushResultEnums;
 import com.github.jobop.gekko.protocols.GekkoInboundProtocol;
+import com.github.jobop.gekko.protocols.message.GekkoEntry;
 import com.github.jobop.gekko.protocols.message.api.*;
 import com.github.jobop.gekko.protocols.message.node.*;
 import com.github.jobop.gekko.store.Store;
+
+import java.util.function.Consumer;
 
 
 public class GekkoInboundMsgHelper implements GekkoInboundProtocol {
     Store store;
     StateMachine stateMachine;
+    NodeState nodeState;
 
-    public GekkoInboundMsgHelper(Store store, StateMachine stateMachine) {
+    EntriesPusher entriesPusher;
+
+    public GekkoInboundMsgHelper(Store store, StateMachine stateMachine, NodeState nodeState, EntriesPusher entriesPusher) {
         this.store = store;
         this.stateMachine = stateMachine;
+        this.nodeState = nodeState;
+        this.entriesPusher = entriesPusher;
     }
 
     /**
@@ -55,9 +68,14 @@ public class GekkoInboundMsgHelper implements GekkoInboundProtocol {
      * @return
      */
     @Override
-    public AppendEntryResp handleAppendEntry(AppendEntryReq req) {
-
-        return null;
+    public void handleAppendEntry(AppendEntryReq req, Consumer consumer) {
+        GekkoEntry entry = req.getGekkoEntry();
+        store.append(entry);
+        if (entry.getPos() == -1) {
+            consumer.accept(entry);
+            return;
+        }
+        entriesPusher.append(entry, consumer);
     }
 
     /**
@@ -103,7 +121,13 @@ public class GekkoInboundMsgHelper implements GekkoInboundProtocol {
      */
     @Override
     public PushEntryResp handlePushDatas(PushEntryReq req) {
-        this.store.append(req.getEntries().get(0));
-        return null;
+        GekkoEntry entry = req.getEntries().get(0);
+        this.store.append(entry);
+        if (entry.getPos() != -1) {
+            return PushEntryResp.builder().acceptNodeId(nodeState.getSelfId()).index(entry.getEntryIndex()).term(nodeState.getTerm()).result(PushResultEnums.AGREE).build();
+        } else {
+            return PushEntryResp.builder().acceptNodeId(nodeState.getSelfId()).term(nodeState.getTerm()).result(PushResultEnums.REJECT).build();
+        }
+
     }
 }

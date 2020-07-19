@@ -19,8 +19,12 @@
 package com.github.jobop.gekko.protocols.message.api;
 
 
-import java.io.Serializable;
+import com.github.jobop.gekko.enums.ResultEnums;
+import lombok.Builder;
 
+import java.io.Serializable;
+@Builder
 public class AppendEntryResp implements Serializable {
-    private String resultCode;
+    private long index;
+    private ResultEnums resultCode;
 }

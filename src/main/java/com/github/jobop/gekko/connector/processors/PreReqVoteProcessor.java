@@ -45,8 +45,9 @@ public class PreReqVoteProcessor extends DefaultProcessor<PreVoteReq> {
         NodeState nodeState = elector.getState();
         long nowTerm = nodeState.getTerm();
         long voteTerm = request.getTerm();
-
-        if (ElectionUtils.judgVote(nowTerm, voteTerm)) {
+        long nowLastIndex = nodeState.getCommitId();
+        long remoteLastIndex = request.getLastIndex();
+        if (ElectionUtils.judgVote(nowTerm, voteTerm, nowLastIndex, remoteLastIndex)) {
             asyncCtx.sendResponse(PreVoteResp.builder().term(voteTerm).voteMemberId(nodeState.getSelfId()).result(VoteResultEnums.AGREE).build());
         } else {
             asyncCtx.sendResponse(PreVoteResp.builder().term(voteTerm).voteMemberId(nodeState.getSelfId()).result(VoteResultEnums.REJECT).build());

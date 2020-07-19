@@ -25,9 +25,13 @@ import com.github.jobop.gekko.enums.VoteResultEnums;
 import com.github.jobop.gekko.protocols.message.node.VoteResp;
 
 public class ElectionUtils {
-    public static boolean judgVote( long nowTerm, long voteTerm) {
+    public static boolean judgVote(long nowTerm, long voteTerm, long nowLastIndex, long remoteLastIndex) {
         if (nowTerm < voteTerm) {
-            return true;
+            if (remoteLastIndex >= nowLastIndex) {
+                return true;
+            } else {
+                return false;
+            }
         } else {
             return false;
         }

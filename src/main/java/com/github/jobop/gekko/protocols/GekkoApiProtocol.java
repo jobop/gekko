@@ -19,13 +19,18 @@
 package com.github.jobop.gekko.protocols;
 
 
+import com.alipay.remoting.AsyncContext;
+import com.alipay.remoting.BizContext;
+import com.github.jobop.gekko.protocols.message.GekkoEntry;
 import com.github.jobop.gekko.protocols.message.api.*;
+
+import java.util.function.Consumer;
 
 
 public interface GekkoApiProtocol {
     public PullEntryResp handleGetEntries(PullEntryReq req);
 
-    public AppendEntryResp handleAppendEntry(AppendEntryReq req);
+    public void handleAppendEntry(AppendEntryReq req, Consumer<GekkoEntry> consumer);
     //获取元数据
 
     public GetMetadataResp handleGetMetadata(GetMetadataReq req);

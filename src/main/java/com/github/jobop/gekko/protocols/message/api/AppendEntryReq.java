@@ -20,10 +20,11 @@ package com.github.jobop.gekko.protocols.message.api;
 
 
 import com.github.jobop.gekko.protocols.message.GekkoEntry;
+import lombok.Data;
 
 import java.io.Serializable;
 
-
+@Data
 public class AppendEntryReq implements Serializable {
     private GekkoEntry gekkoEntry;
 }
