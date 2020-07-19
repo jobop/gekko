@@ -29,11 +29,13 @@ import com.github.jobop.gekko.core.election.VoteCollector;
 import com.github.jobop.gekko.core.lifecycle.LifeCycleAdpter;
 import com.github.jobop.gekko.core.metadata.NodeState;
 import com.github.jobop.gekko.core.metadata.Peer;
+import com.github.jobop.gekko.enums.RoleEnum;
 import com.github.jobop.gekko.protocols.GekkoNodeConnectProtocol;
 import com.github.jobop.gekko.protocols.message.GekkoEntry;
 import com.github.jobop.gekko.protocols.message.node.HeartBeatReq;
 import com.github.jobop.gekko.protocols.message.node.PushEntryReq;
 import com.github.jobop.gekko.protocols.message.node.VoteReq;
+import lombok.extern.slf4j.Slf4j;
 
 import java.util.List;
 import java.util.Map;
@@ -42,6 +44,7 @@ import java.util.concurrent.ConcurrentHashMap;
 /**
  * the client to connect to orther nodes
  */
+@Slf4j
 public class GekkoNodeNettyClient extends LifeCycleAdpter implements GekkoNodeConnectProtocol {
     GekkoConfig conf;
     NodeState nodeState;
@@ -77,11 +80,15 @@ public class GekkoNodeNettyClient extends LifeCycleAdpter implements GekkoNodeCo
 
     @Override
     public void sendHeartBeat() {
+        if(this.nodeState.getRole()!= RoleEnum.LEADER){
+            log.warn("not a leader can not send hearbeat!");
+            return ;
+        }
         for (Map.Entry<String, Peer> e : this.nodeState.getPeersMap().entrySet()) {
             String peerId = e.getKey();
             Peer peer = e.getValue();
             try {
-                orderNodesRpcClient.oneway(peer.getHost() + ":" + peer.getPort(), HeartBeatReq.builder().remoteNodeId(nodeState.getSelfId()).termId(nodeState.getTerm()).build());
+                orderNodesRpcClient.oneway(peer.getHost() + ":" + peer.getPort(), HeartBeatReq.builder().remoteNodeId(nodeState.getSelfId()).term(nodeState.getTerm()).build());
             } catch (RemotingException remotingException) {
                 remotingException.printStackTrace();
             } catch (InterruptedException interruptedException) {
@@ -108,6 +115,10 @@ public class GekkoNodeNettyClient extends LifeCycleAdpter implements GekkoNodeCo
 
     @Override
     public void pushDatas(List<GekkoEntry> entries) {
+        if(this.nodeState.getRole()!= RoleEnum.LEADER){
+            log.warn("not a leader can not push data!");
+            return ;
+        }
         for (Map.Entry<String, Peer> e : this.nodeState.getPeersMap().entrySet()) {
             String peerId = e.getKey();
             Peer peer = e.getValue();

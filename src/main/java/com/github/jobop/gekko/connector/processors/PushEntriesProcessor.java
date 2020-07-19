@@ -36,7 +36,10 @@ public class PushEntriesProcessor extends DefaultProcessor<PushEntryReq> {
     }
 
     public void handleRequest(BizContext bizCtx, AsyncContext asyncCtx, PushEntryReq request) {
-        this.elector.becomeAFollower();
+        if (request.getTerm() < elector.getState().getTerm()) {
+            return;
+        }
+        this.elector.becomeAFollower(request.getTerm(), request.getRemoteNodeId());
     }
 
     public String interest() {

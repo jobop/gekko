@@ -44,7 +44,7 @@ public class ReqVoteProcessor extends DefaultProcessor<VoteReq> {
         long nowTerm = nodeState.getTerm();
         if (nowTerm < request.getTerm()) {
             if (nodeState.getTermAtomic().compareAndSet(nowTerm, request.getTerm())) {
-                elector.becomeAFollower();
+                elector.becomeAFollower(request.getTerm(),request.getCandidateId());
                 asyncCtx.sendResponse(VoteResp.builder().term(request.getTerm()).voteMemberId(nodeState.getSelfId()).result(VoteResultEnums.AGREE).build());
             } else {
                 asyncCtx.sendResponse(VoteResp.builder().term(request.getTerm()).voteMemberId(nodeState.getSelfId()).result(VoteResultEnums.REJECT).build());

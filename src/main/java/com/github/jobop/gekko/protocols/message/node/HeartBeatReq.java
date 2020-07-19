@@ -36,5 +36,5 @@ public class HeartBeatReq implements Serializable {
      */
     private static final long serialVersionUID = -1288207208017808618L;
     private String remoteNodeId;
-    private long termId;
+    private long term;
 }

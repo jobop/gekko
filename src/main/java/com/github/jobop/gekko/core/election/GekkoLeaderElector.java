@@ -32,6 +32,7 @@ import lombok.Data;
 
 import java.util.*;
 import java.util.concurrent.TimeUnit;
+
 @Data
 public class GekkoLeaderElector extends LifeCycleAdpter {
     GekkoConfig conf;
@@ -126,7 +127,10 @@ public class GekkoLeaderElector extends LifeCycleAdpter {
     }
 
 
-    public void becomeAFollower() {
+    public void becomeAFollower(long term,String leaderId) {
+        this.state.setRole(RoleEnum.FOLLOWER);
+        this.state.getTermAtomic().set(term);
+        this.state.setLeaderId(leaderId);;
         this.cancelAllVoteCollectors();
         this.stoptSendHeartBeatToFollower();
         this.resetElectionTimeout();

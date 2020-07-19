@@ -60,7 +60,7 @@ public class GekkoNode extends LifeCycleAdpter {
         this.nodeClient = new GekkoNodeNettyClient(conf, nodeState);
         this.elector = new GekkoLeaderElector(conf, nodeClient, nodeState);
         this.inboundHelper = new GekkoInboundMsgHelper(this.store, this.stateMachine);
-        this.server = new GekkoNettyServer(conf, this.inboundHelper, this.nodeState);
+        this.server = new GekkoNettyServer(conf, this.inboundHelper, this.nodeState,this.elector);
 
 
 

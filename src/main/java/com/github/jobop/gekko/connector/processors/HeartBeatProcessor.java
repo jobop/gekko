@@ -36,7 +36,10 @@ public class HeartBeatProcessor extends DefaultProcessor<HeartBeatReq> {
     }
 
     public void handleRequest(BizContext bizCtx, AsyncContext asyncCtx, HeartBeatReq request) {
-        this.elector.becomeAFollower();
+        if (request.getTerm() < elector.getState().getTerm()) {
+            return;
+        }
+        this.elector.becomeAFollower(request.getTerm(), request.getRemoteNodeId());
     }
 
     public String interest() {
