@@ -22,8 +22,6 @@ import com.alipay.remoting.AsyncContext;
 import com.alipay.remoting.BizContext;
 import com.github.jobop.gekko.core.election.GekkoLeaderElector;
 import com.github.jobop.gekko.protocols.GekkoInboundProtocol;
-import com.github.jobop.gekko.protocols.message.api.PullEntryReq;
-import com.github.jobop.gekko.protocols.message.api.PullEntryResp;
 import com.github.jobop.gekko.protocols.message.node.HeartBeatReq;
 
 /**
@@ -38,7 +36,7 @@ public class HeartBeatProcessor extends DefaultProcessor<HeartBeatReq> {
     }
 
     public void handleRequest(BizContext bizCtx, AsyncContext asyncCtx, HeartBeatReq request) {
-        this.elector.resetHeartBeatTimeout();
+        this.elector.becomeAFollower();
     }
 
     public String interest() {

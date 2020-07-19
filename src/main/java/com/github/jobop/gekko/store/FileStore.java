@@ -33,6 +33,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 
@@ -71,7 +72,7 @@ public class FileStore extends AbstractStore {
         dataFile.load();
         indexFile.load();
 
-        this.fileFlushThread = new NotifyableThread(this.conf.getFlushInterval(), "flush-thread") {
+        this.fileFlushThread = new NotifyableThread(this.conf.getFlushInterval(), TimeUnit.SECONDS, "flush-thread") {
             @Override
             public void doWork() {
                 dataFile.flush(1);

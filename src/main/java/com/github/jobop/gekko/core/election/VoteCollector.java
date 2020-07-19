@@ -22,31 +22,63 @@ package com.github.jobop.gekko.core.election;
 
 import com.alipay.remoting.InvokeCallback;
 import com.github.jobop.gekko.core.metadata.NodeState;
+import com.github.jobop.gekko.enums.RoleEnum;
+import com.github.jobop.gekko.enums.VoteResultEnums;
+import com.github.jobop.gekko.protocols.message.node.VoteResp;
+import lombok.Data;
+import lombok.extern.slf4j.Slf4j;
 
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
 
+@Slf4j
+@Data
 public class VoteCollector implements InvokeCallback {
     NodeState nodeState;
+    private long voteTerm;
 
-    private ConcurrentHashMap agreeNodeMap = new ConcurrentHashMap();
-
+    private Set<String> agreeSet = Collections.synchronizedSet(new HashSet<>());
 
 
     private volatile AtomicBoolean available = new AtomicBoolean(true);
+    GekkoLeaderElector elector;
 
-    public VoteCollector(NodeState nodeState) {
+    public VoteCollector(NodeState nodeState, GekkoLeaderElector elector) {
         this.nodeState = nodeState;
+        this.voteTerm = nodeState.getTerm();
+        agreeSet.add(nodeState.getSelfId());
+        this.elector = elector;
     }
 
     @Override
     public void onResponse(Object result) {
+        VoteResp resp = (VoteResp) result;
+        if (resp.getTerm() != this.voteTerm) {
+            log.warn("this vote term has expired! term=" + this.getVoteTerm());
+            return;
+        }
+        if (this.voteTerm < nodeState.getTerm()) {
+            log.warn("this vote term has expired! term=" + this.getVoteTerm());
+            return;
+        }
+
         if (available.get() == true) {
-            int nodeCount = nodeState.getPeersMap().size();
-
-
+            if (resp.getResult() == VoteResultEnums.AGREE) {
+                agreeSet.add(resp.getVoteMemberId());
+                //become a leader
+                if (agreeSet.size() + 1 > (nodeState.getPeersMap().size() / 2)) {
+                    //upgrade to leader and disable this collector
+                    if (available.compareAndSet(true, false)) {
+                        this.nodeState.setLeaderId(nodeState.getSelfId());
+                        this.nodeState.setRole(RoleEnum.LEADER);
+//                        this.nodeState.getTermAtomic().compareAndSet(this.voteTerm, this.voteTerm + 1);
+                        this.elector.becomeALeader();
+                    }
+                }
+            }
         }
 
 
@@ -54,11 +86,15 @@ public class VoteCollector implements InvokeCallback {
 
     @Override
     public void onException(Throwable e) {
-
+        log.error("", e);
     }
 
     @Override
     public Executor getExecutor() {
         return null;
+    }
+
+    public void disAble() {
+        this.available.compareAndSet(true, false);
     }
 }

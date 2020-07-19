@@ -24,24 +24,32 @@ import com.github.jobop.gekko.core.GekkoConfig;
 import com.github.jobop.gekko.core.lifecycle.LifeCycleAdpter;
 import com.github.jobop.gekko.core.metadata.NodeState;
 import com.github.jobop.gekko.core.timout.DelayChangeableTimeoutHolder;
+import com.github.jobop.gekko.core.timout.RefreshableTimeoutHolder;
 import com.github.jobop.gekko.enums.RoleEnum;
 import io.netty.util.Timeout;
 import io.netty.util.TimerTask;
+import lombok.Data;
 
-import java.util.Random;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
-
+@Data
 public class GekkoLeaderElector extends LifeCycleAdpter {
     GekkoConfig conf;
     GekkoNodeNettyClient client;
     NodeState state;
 
-    DelayChangeableTimeoutHolder heartBeatTimer;
-    VoteCollector voteCollector;
+    DelayChangeableTimeoutHolder electionTimeoutChecker;
 
-    static int MAX_HEART_BEAT_TIMEOUT = 300;
+    RefreshableTimeoutHolder heartBeatSender;
 
-    Random random = new Random();
+    private Set<VoteCollector> voteCollectors = Collections.synchronizedSet(new HashSet<>());
+
+    static int MAX_ELECTION_TIMEOUT = 300;
+    static int MIN_ELECTION_TIMEOUT = 150;
+
+    static int HEART_BEAT_INTERVAL = 80;
+
+    Random random = new Random(MIN_ELECTION_TIMEOUT);
 
     public GekkoLeaderElector(GekkoConfig conf, GekkoNodeNettyClient client, NodeState state) {
         this.conf = conf;
@@ -52,33 +60,81 @@ public class GekkoLeaderElector extends LifeCycleAdpter {
 
     @Override
     public void init() {
-        heartBeatTimer = new DelayChangeableTimeoutHolder(new TimerTask() {
+        GekkoLeaderElector thisElector = this;
+        electionTimeoutChecker = new DelayChangeableTimeoutHolder(new TimerTask() {
             @Override
             public void run(Timeout timeout) throws Exception {
                 state.setRole(RoleEnum.CANDIDATE);
-                //TODO:
-                client.reqVote();
+                state.getTermAtomic().incrementAndGet();
+                VoteCollector voteCollector = new VoteCollector(state, thisElector);
+                voteCollectors.add(voteCollector);
+                client.reqVote(voteCollector);
+                //when no outer trigger the reset,it will reset by itself
+                thisElector.resetElectionTimeout();
             }
-        }, random.nextInt(MAX_HEART_BEAT_TIMEOUT), TimeUnit.MILLISECONDS);
+        }, random.nextInt(MAX_ELECTION_TIMEOUT), TimeUnit.MILLISECONDS);
+
+
+        heartBeatSender = new RefreshableTimeoutHolder(new TimerTask() {
+            @Override
+            public void run(Timeout timeout) throws Exception {
+                client.sendHeartBeat();
+                //wait for the next heartbeat trigger
+                thisElector.refreshSendHeartBeatToFollower();
+            }
+        }, HEART_BEAT_INTERVAL, TimeUnit.MILLISECONDS);
     }
 
 
     @Override
     public void start() {
-        heartBeatTimer.refresh();
+        electionTimeoutChecker.refresh();
     }
 
     @Override
     public void shutdown() {
-        heartBeatTimer.cancel();
+        electionTimeoutChecker.cancel();
     }
 
-    public void cancelVote(){
-
+    /**
+     * when get a heartbeat or append,it means that a leader has born,so need to cancel all votes belong to this node
+     */
+    public void cancelAllVoteCollectors() {
+        state.setRole(RoleEnum.FOLLOWER);
+        if (!voteCollectors.isEmpty()) {
+            for (VoteCollector collector : voteCollectors) {
+                collector.disAble();
+            }
+            voteCollectors.clear();
+        }
     }
-    public void resetHeartBeatTimeout() {
-        heartBeatTimer.refresh(random.nextInt(MAX_HEART_BEAT_TIMEOUT), TimeUnit.MILLISECONDS);
+
+    public void refreshSendHeartBeatToFollower() {
+        this.heartBeatSender.refresh();
+    }
+
+    public void stoptSendHeartBeatToFollower() {
+        this.heartBeatSender.cancel();
+    }
+
+    public void stopElectionTimeout() {
+        electionTimeoutChecker.cancel();
+    }
+
+    public void resetElectionTimeout() {
+        electionTimeoutChecker.refresh(random.nextInt(MAX_ELECTION_TIMEOUT), TimeUnit.MILLISECONDS);
     }
 
 
+    public void becomeAFollower() {
+        this.cancelAllVoteCollectors();
+        this.stoptSendHeartBeatToFollower();
+        this.resetElectionTimeout();
+    }
+
+    public void becomeALeader() {
+        this.cancelAllVoteCollectors();
+        this.stopElectionTimeout();
+        this.refreshSendHeartBeatToFollower();
+    }
 }

@@ -21,9 +21,12 @@ package com.github.jobop.gekko.connector.processors;
 import com.alipay.remoting.AsyncContext;
 import com.alipay.remoting.BizContext;
 import com.github.jobop.gekko.core.election.GekkoLeaderElector;
+import com.github.jobop.gekko.core.metadata.NodeState;
+import com.github.jobop.gekko.enums.RoleEnum;
+import com.github.jobop.gekko.enums.VoteResultEnums;
 import com.github.jobop.gekko.protocols.GekkoInboundProtocol;
-import com.github.jobop.gekko.protocols.message.node.PushEntryReq;
 import com.github.jobop.gekko.protocols.message.node.VoteReq;
+import com.github.jobop.gekko.protocols.message.node.VoteResp;
 
 /**
  * process the vote req from condicatior
@@ -37,7 +40,18 @@ public class ReqVoteProcessor extends DefaultProcessor<VoteReq> {
     }
 
     public void handleRequest(BizContext bizCtx, AsyncContext asyncCtx, VoteReq request) {
-        elector.resetHeartBeatTimeout();
+        NodeState nodeState = elector.getState();
+        long nowTerm = nodeState.getTerm();
+        if (nowTerm < request.getTerm()) {
+            if (nodeState.getTermAtomic().compareAndSet(nowTerm, request.getTerm())) {
+                elector.becomeAFollower();
+                asyncCtx.sendResponse(VoteResp.builder().term(request.getTerm()).voteMemberId(nodeState.getSelfId()).result(VoteResultEnums.AGREE).build());
+            } else {
+                asyncCtx.sendResponse(VoteResp.builder().term(request.getTerm()).voteMemberId(nodeState.getSelfId()).result(VoteResultEnums.REJECT).build());
+            }
+        } else {
+            asyncCtx.sendResponse(VoteResp.builder().term(request.getTerm()).voteMemberId(nodeState.getSelfId()).result(VoteResultEnums.REJECT).build());
+        }
     }
 
     public String interest() {

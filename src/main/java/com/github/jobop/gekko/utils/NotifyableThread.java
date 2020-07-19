@@ -32,6 +32,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 public abstract class NotifyableThread extends Thread {
     private CyclicBarrier cb = new CyclicBarrier(2);
     private int interval;
+    private TimeUnit timeUnit;
     private volatile AtomicBoolean shutdowned = new AtomicBoolean(false);
     /**
      * 1、avoid to hasNotify more then twice
@@ -43,7 +44,7 @@ public abstract class NotifyableThread extends Thread {
     public void trigger() {
         if (hasNotified.compareAndSet(false, true)) {
             try {
-                cb.await(0, TimeUnit.SECONDS);
+                cb.await(0, timeUnit);
             } catch (Exception e) {
             }
         }
@@ -61,9 +62,10 @@ public abstract class NotifyableThread extends Thread {
 
     }
 
-    public NotifyableThread(int interval,String name) {
+    public NotifyableThread(int interval, TimeUnit timeUnit, String name) {
         this.interval = interval;
         this.setName(name);
+        this.timeUnit = timeUnit;
     }
 
     @Override
@@ -87,7 +89,7 @@ public abstract class NotifyableThread extends Thread {
         }
         try {
             cb.reset();//2
-            cb.await(this.interval, TimeUnit.SECONDS);//1
+            cb.await(this.interval, timeUnit);//1
         } catch (Exception e) {
         } finally {
             hasNotified.set(false);

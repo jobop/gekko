@@ -28,6 +28,7 @@ import lombok.Data;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicLong;
 
 
 @Data
@@ -39,18 +40,18 @@ public class NodeState extends LifeCycleAdpter {
     }
 
     private String selfId;
-    private String leaderId;
-    private RoleEnum role;
-    private long term;
-    private long writeId;
-    private long commitId;
-    private Map<String, Peer> peersMap = new ConcurrentHashMap<String, Peer>();
+    private volatile String leaderId;
+    private volatile RoleEnum role;
+    private volatile AtomicLong termAtomic;
+    private volatile long writeId;
+    private volatile long commitId;
+    private volatile Map<String, Peer> peersMap = new ConcurrentHashMap<String, Peer>();
 
     public void init() {
         this.selfId = this.config.getSelfId();
         this.leaderId = "";
-        this.role = RoleEnum.NODE;
-        this.term = -1;
+        this.role = RoleEnum.FOLLOWER;
+        this.termAtomic = new AtomicLong(-1);
         this.writeId = -1;
         this.commitId = -1;
         if (this.config.getPeers() == null || this.config.getPeerIds() == null) {
@@ -72,4 +73,10 @@ public class NodeState extends LifeCycleAdpter {
         }
 
     }
+
+    public long getTerm() {
+        return termAtomic.get();
+    }
+
+
 }

@@ -47,6 +47,7 @@ public class GekkoNodeNettyClient extends LifeCycleAdpter implements GekkoNodeCo
     NodeState nodeState;
     //    ConcurrentHashMap<String, RpcClient> orderNodesRpcClient = new ConcurrentHashMap<String, RpcClient>();
     RpcClient orderNodesRpcClient;
+    static int WAIT_FOR_VOTE_TIME_OUT = 150;
 
     public GekkoNodeNettyClient(GekkoConfig conf, NodeState nodeState) {
         this.conf = conf;
@@ -96,7 +97,7 @@ public class GekkoNodeNettyClient extends LifeCycleAdpter implements GekkoNodeCo
             Peer peer = e.getValue();
             try {
                 //FIXME:
-                orderNodesRpcClient.invokeWithCallback(peer.getHost() + ":" + peer.getPort(), VoteReq.builder().term(nodeState.getTerm() + 1).candidateId(nodeState.getSelfId()).build(), voteCollector, 99999);
+                orderNodesRpcClient.invokeWithCallback(peer.getHost() + ":" + peer.getPort(), VoteReq.builder().term(voteCollector.getVoteTerm()).candidateId(nodeState.getSelfId()).build(), voteCollector, WAIT_FOR_VOTE_TIME_OUT);
             } catch (RemotingException remotingException) {
                 remotingException.printStackTrace();
             } catch (InterruptedException interruptedException) {

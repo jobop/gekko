@@ -21,11 +21,13 @@
 import com.github.jobop.gekko.utils.NotifyableThread;
 import org.junit.Test;
 
+import java.util.concurrent.TimeUnit;
+
 public class NotifyableThreadTest {
 
     @Test
     public void testRunInterval() throws InterruptedException {
-        NotifyableThread t = new NotifyableThread(10,"testRunInterval") {
+        NotifyableThread t = new NotifyableThread(10, TimeUnit.SECONDS,"testRunInterval") {
             @Override
             public void doWork() {
                 System.out.println(System.currentTimeMillis());
@@ -37,7 +39,7 @@ public class NotifyableThreadTest {
 
     @Test
     public void testRunByTrigger() throws InterruptedException {
-        NotifyableThread t = new NotifyableThread(10,"testRunByTrigger") {
+        NotifyableThread t = new NotifyableThread(10,TimeUnit.SECONDS,"testRunByTrigger") {
             @Override
             public void doWork() {
                 System.out.println(System.currentTimeMillis());
@@ -60,7 +62,7 @@ public class NotifyableThreadTest {
 
     @Test
     public void testWaitforShutdown() throws InterruptedException {
-        NotifyableThread t = new NotifyableThread(10,"testWaitforShutdown") {
+        NotifyableThread t = new NotifyableThread(10,TimeUnit.SECONDS,"testWaitforShutdown") {
             @Override
             public void doWork() {
                 System.out.println(System.currentTimeMillis());

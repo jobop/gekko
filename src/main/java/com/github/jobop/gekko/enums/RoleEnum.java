@@ -20,5 +20,5 @@ package com.github.jobop.gekko.enums;
 
 
 public enum RoleEnum {
-    NODE, CANDIDATE, LEADER
+    FOLLOWER, CANDIDATE, LEADER
 }

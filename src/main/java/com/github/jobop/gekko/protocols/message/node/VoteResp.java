@@ -19,12 +19,14 @@
 package com.github.jobop.gekko.protocols.message.node;
 
 import com.github.jobop.gekko.enums.VoteResultEnums;
+import lombok.Builder;
 import lombok.Data;
 
 import java.io.Serializable;
 
 
 @Data
+@Builder
 public class VoteResp implements Serializable {
     private long term;
     private String voteMemberId;
