@@ -24,6 +24,7 @@ import com.github.jobop.gekko.core.exception.GekkoException;
 import com.github.jobop.gekko.core.lifecycle.LifeCycleAdpter;
 import com.github.jobop.gekko.enums.ResultEnums;
 import com.github.jobop.gekko.enums.RoleEnum;
+import lombok.Builder;
 import lombok.Data;
 
 import java.util.Map;
@@ -32,6 +33,7 @@ import java.util.concurrent.atomic.AtomicLong;
 
 
 @Data
+@Builder
 public class NodeState extends LifeCycleAdpter {
     private GekkoConfig config;
 

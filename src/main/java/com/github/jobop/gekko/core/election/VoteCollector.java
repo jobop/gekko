@@ -31,11 +31,13 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 @Slf4j
 @Data
 public class VoteCollector implements InvokeCallback {
+    static Executor executor = Executors.newCachedThreadPool();
     NodeState nodeState;
     private long voteTerm;
 
@@ -88,7 +90,7 @@ public class VoteCollector implements InvokeCallback {
 
     @Override
     public Executor getExecutor() {
-        return null;
+        return executor;
     }
 
     public void disAble() {

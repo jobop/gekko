@@ -58,7 +58,6 @@ public class GekkoNettyServer extends LifeCycleAdpter {
         rpcServer.registerUserProcessor(new AppendEntryProcessor(inboundHelper, elector));
 
 
-//        rpcServer.registerUserProcessor(new );
 
     }
 

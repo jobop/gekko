@@ -18,6 +18,8 @@
  */
 package com.github.jobop.gekko.protocols.message.api;
 
+import com.github.jobop.gekko.core.metadata.Peer;
+import lombok.Builder;
 import lombok.Data;
 
 import java.io.Serializable;
@@ -25,8 +27,9 @@ import java.util.List;
 
 
 @Data
+@Builder
 public class GetMetadataResp implements Serializable {
-    List<String> peers;
+    List<Peer> peers;
     String leaderId;
     long term;
 

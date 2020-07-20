@@ -20,6 +20,7 @@ package com.github.jobop.gekko.store;
 
 import com.github.jobop.gekko.core.GekkoConfig;
 import com.github.jobop.gekko.core.lifecycle.LifeCycleAdpter;
+import com.github.jobop.gekko.core.metadata.NodeState;
 import com.github.jobop.gekko.protocols.message.GekkoEntry;
 
 import java.util.List;
@@ -27,9 +28,11 @@ import java.util.List;
 
 public  class AbstractStore extends LifeCycleAdpter implements com.github.jobop.gekko.store.Store {
     protected GekkoConfig conf;
+    protected   NodeState nodeState;
 
-    public AbstractStore(GekkoConfig conf) {
+    public AbstractStore(GekkoConfig conf, NodeState nodeState) {
         this.conf = conf;
+        this.nodeState=nodeState;
     }
 
     @Override

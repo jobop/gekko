@@ -25,7 +25,7 @@ import com.github.jobop.gekko.connector.GekkoNettyServer;
 import com.github.jobop.gekko.connector.GekkoNodeNettyClient;
 import com.github.jobop.gekko.core.lifecycle.LifeCycleAdpter;
 import com.github.jobop.gekko.core.metadata.NodeState;
-import com.github.jobop.gekko.core.replication.EntriesPusher;
+import com.github.jobop.gekko.core.replication.EntriesSynchronizer;
 import com.github.jobop.gekko.core.statemachine.StateMachine;
 import com.github.jobop.gekko.enums.StoreEnums;
 import com.github.jobop.gekko.protocols.GekkoInboundProtocol;
@@ -44,7 +44,7 @@ public class GekkoNode extends LifeCycleAdpter {
     Store store;
     StateMachine stateMachine;
     GekkoLeaderElector elector;
-    EntriesPusher pusher;
+    EntriesSynchronizer pusher;
 
     public GekkoNode(GekkoConfig conf) {
         this.conf = conf;
@@ -52,7 +52,7 @@ public class GekkoNode extends LifeCycleAdpter {
         if (conf.getStoreType() == StoreEnums.MEMORY) {
             this.store = new MemoryStore(conf);
         } else if (conf.getStoreType() == StoreEnums.FILE) {
-            this.store = new FileStore(conf);
+            this.store = new FileStore(conf,this.nodeState);
         } else if (conf.getStoreType() == StoreEnums.ROCKDB) {
             this.store = new RockDbStore(conf);
         }
@@ -61,7 +61,7 @@ public class GekkoNode extends LifeCycleAdpter {
 
         this.nodeClient = new GekkoNodeNettyClient(conf, nodeState);
         this.elector = new GekkoLeaderElector(conf, nodeClient, nodeState);
-        this.pusher=new EntriesPusher(conf, nodeClient, nodeState);
+        this.pusher=new EntriesSynchronizer(conf, nodeClient, nodeState);
         this.inboundHelper = new GekkoInboundMsgHelper(this.store, this.stateMachine,this.nodeState, this.pusher);
         this.server = new GekkoNettyServer(conf, this.inboundHelper, this.nodeState,this.elector);
 

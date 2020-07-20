@@ -19,6 +19,7 @@
 package com.github.jobop.gekko.store;
 
 import com.github.jobop.gekko.core.GekkoConfig;
+import com.github.jobop.gekko.core.metadata.NodeState;
 import com.github.jobop.gekko.protocols.message.GekkoEntry;
 import com.github.jobop.gekko.protocols.message.GekkoIndex;
 import com.github.jobop.gekko.store.file.mmap.AutoRollMMapFile;
@@ -54,8 +55,8 @@ public class FileStore extends AbstractStore {
         return ByteBuffer.allocate(GekkoIndex.INDEX_SIZE * 1024);
     });
 
-    public FileStore(GekkoConfig conf) {
-        super(conf);
+    public FileStore(GekkoConfig conf, NodeState nodeState) {
+        super(conf, nodeState);
     }
 
     @Override
@@ -96,25 +97,30 @@ public class FileStore extends AbstractStore {
     public void append(GekkoEntry entry) {
         //FIXME:
         synchronized (this) {
-            //set pos
-            long pos = dataFile.allocPos(entry.getTotalSize());
-            entry.setPos(pos);
-
-            //set index
-            long dataIndex = indexFile.getMaxOffset() / GekkoIndex.INDEX_SIZE;
-            entry.setEntryIndex(dataIndex);
-            //TODO:set term
-            //after set attributes,set cheksum
-            entry.computSizeInBytes();
-            entry.setChecksum(entry.checksum());
-
+            if (nodeState.getSelfId() == nodeState.getLeaderId()) {
+                fillEntry(entry);
+            }
             //save data
             saveData(entry);
             //save index
-            GekkoIndex index = GekkoIndex.builder().magic(0xCAFEDADE).totalSize(GekkoIndex.INDEX_SIZE).dataPos(pos).dataIndex(dataIndex).dataSize(entry.getTotalSize()).build();
+            GekkoIndex index = GekkoIndex.builder().magic(0xCAFEDADE).totalSize(GekkoIndex.INDEX_SIZE).dataPos(entry.getPos()).dataIndex(entry.getEntryIndex()).dataSize(entry.getTotalSize()).build();
             saveIndex(index);
         }
 
+    }
+
+    private void fillEntry(GekkoEntry entry) {
+        //set pos
+        long pos = dataFile.allocPos(entry.getTotalSize());
+        entry.setPos(pos);
+
+        //set index
+        long dataIndex = indexFile.getMaxOffset() / GekkoIndex.INDEX_SIZE;
+        entry.setEntryIndex(dataIndex);
+        //set term
+        entry.setTerm(this.nodeState.getTerm());
+        entry.computSizeInBytes();
+        entry.setChecksum(entry.checksum());
     }
 
 

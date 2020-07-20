@@ -1,3 +1,4 @@
+
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -14,36 +15,42 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *
- * Created by CuttleFish on 2020/7/2.
+ * Created by CuttleFish on 2020/7/20.
  */
+
 package com.github.jobop.gekko.connector.processors;
 
 import com.alipay.remoting.AsyncContext;
 import com.alipay.remoting.BizContext;
 import com.github.jobop.gekko.core.election.GekkoLeaderElector;
+import com.github.jobop.gekko.core.metadata.NodeState;
+import com.github.jobop.gekko.core.metadata.Peer;
 import com.github.jobop.gekko.protocols.GekkoInboundProtocol;
-import com.github.jobop.gekko.protocols.message.node.HeartBeatReq;
+import com.github.jobop.gekko.protocols.message.api.GetMetadataReq;
+import com.github.jobop.gekko.protocols.message.api.GetMetadataResp;
 
-/**
- * process the heartbeat req from leader
- */
-public class HeartBeatProcessor extends DefaultProcessor<HeartBeatReq> {
+import java.util.List;
+import java.util.stream.Collectors;
+
+public class GetMetadataProcessor extends DefaultProcessor<GetMetadataReq> {
     GekkoLeaderElector elector;
 
-    public HeartBeatProcessor(GekkoInboundProtocol helper, GekkoLeaderElector elector) {
+    public GetMetadataProcessor(GekkoInboundProtocol helper, GekkoLeaderElector elector) {
         super(helper);
         this.elector = elector;
     }
 
-    public void handleRequest(BizContext bizCtx, AsyncContext asyncCtx, HeartBeatReq request) {
-
-        if (request.getTerm() < elector.getState().getTerm()) {
-            return;
-        }
-        this.elector.becomeAFollower(request.getTerm(), request.getRemoteNodeId());
+    @Override
+    public void handleRequest(BizContext bizCtx, AsyncContext asyncCtx, GetMetadataReq request) {
+        NodeState nodeState = elector.getState();
+        List<Peer> peers = nodeState.getPeersMap().entrySet().stream().map(e -> {
+            return e.getValue();
+        }).collect(Collectors.toList());
+        asyncCtx.sendResponse(GetMetadataResp.builder().leaderId(nodeState.getLeaderId()).peers(peers).term(nodeState.getTerm()).build());
     }
 
+    @Override
     public String interest() {
-        return HeartBeatReq.class.getName();
+        return GetMetadataReq.class.getName();
     }
 }

@@ -20,10 +20,8 @@
 package com.github.jobop.gekko.connector;
 
 
-import com.alipay.remoting.AsyncContext;
-import com.alipay.remoting.BizContext;
 import com.github.jobop.gekko.core.metadata.NodeState;
-import com.github.jobop.gekko.core.replication.EntriesPusher;
+import com.github.jobop.gekko.core.replication.EntriesSynchronizer;
 import com.github.jobop.gekko.core.statemachine.StateMachine;
 import com.github.jobop.gekko.enums.PushResultEnums;
 import com.github.jobop.gekko.protocols.GekkoInboundProtocol;
@@ -32,6 +30,7 @@ import com.github.jobop.gekko.protocols.message.api.*;
 import com.github.jobop.gekko.protocols.message.node.*;
 import com.github.jobop.gekko.store.Store;
 
+import java.util.List;
 import java.util.function.Consumer;
 
 
@@ -40,13 +39,13 @@ public class GekkoInboundMsgHelper implements GekkoInboundProtocol {
     StateMachine stateMachine;
     NodeState nodeState;
 
-    EntriesPusher entriesPusher;
+    EntriesSynchronizer entriesSynchronizer;
 
-    public GekkoInboundMsgHelper(Store store, StateMachine stateMachine, NodeState nodeState, EntriesPusher entriesPusher) {
+    public GekkoInboundMsgHelper(Store store, StateMachine stateMachine, NodeState nodeState, EntriesSynchronizer entriesSynchronizer) {
         this.store = store;
         this.stateMachine = stateMachine;
         this.nodeState = nodeState;
-        this.entriesPusher = entriesPusher;
+        this.entriesSynchronizer = entriesSynchronizer;
     }
 
     /**
@@ -57,8 +56,8 @@ public class GekkoInboundMsgHelper implements GekkoInboundProtocol {
      */
     @Override
     public PullEntryResp handleGetEntries(PullEntryReq req) {
-
-        return null;
+        List<GekkoEntry> entries= store.batchGetByIndex(req.getFromIndex(),req.getToIndex());
+        return PullEntryResp.builder().enries(entries).build();
     }
 
     /**
@@ -75,7 +74,7 @@ public class GekkoInboundMsgHelper implements GekkoInboundProtocol {
             consumer.accept(entry);
             return;
         }
-        entriesPusher.append(entry, consumer);
+        entriesSynchronizer.append(entry, consumer);
     }
 
     /**

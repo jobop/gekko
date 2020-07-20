@@ -29,14 +29,14 @@ import com.github.jobop.gekko.protocols.message.GekkoEntry;
 import java.util.*;
 import java.util.function.Consumer;
 
-public class EntriesPusher extends LifeCycleAdpter {
+public class EntriesSynchronizer extends LifeCycleAdpter {
     GekkoConfig conf;
     GekkoNodeNettyClient client;
     NodeState state;
     private Set<AcceptCollector> acceptCollector = Collections.synchronizedSet(new HashSet<>());
 
 
-    public EntriesPusher(GekkoConfig conf, GekkoNodeNettyClient client, NodeState state) {
+    public EntriesSynchronizer(GekkoConfig conf, GekkoNodeNettyClient client, NodeState state) {
         this.conf = conf;
         this.client = client;
         this.state = state;
