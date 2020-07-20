@@ -24,6 +24,7 @@ import com.alipay.remoting.InvokeCallback;
 import com.github.jobop.gekko.core.metadata.NodeState;
 import com.github.jobop.gekko.enums.RoleEnum;
 import com.github.jobop.gekko.enums.VoteResultEnums;
+import com.github.jobop.gekko.protocols.message.node.PreVoteResp;
 import com.github.jobop.gekko.protocols.message.node.VoteResp;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
@@ -51,19 +52,19 @@ public class PreVoteCollector implements InvokeCallback {
 
     public PreVoteCollector(NodeState nodeState, GekkoLeaderElector elector) {
         this.nodeState = nodeState;
-        this.voteTerm = nodeState.getTerm();
+        this.voteTerm = nodeState.getTerm() + 1;
         agreeSet.add(nodeState.getSelfId());
         this.elector = elector;
     }
 
     @Override
     public void onResponse(Object result) {
-        VoteResp resp = (VoteResp) result;
-        if (resp.getTerm() != this.voteTerm) {
-            log.warn("this vote term has expired! term=" + this.getVoteTerm());
+        PreVoteResp resp = (PreVoteResp) result;
+        if (resp.getTerm() != this.getVoteTerm()) {
+            log.warn("this vote term has expired! thisterm=" + this.getVoteTerm() + " resp term=" + resp.getTerm());
             return;
         }
-        if (this.voteTerm < nodeState.getTerm() + 1) {
+        if (this.getVoteTerm() < nodeState.getTerm() + 1) {
             log.warn("this pre vote term has expired! term=" + this.getVoteTerm());
             return;
         }
@@ -72,7 +73,7 @@ public class PreVoteCollector implements InvokeCallback {
             if (resp.getResult() == VoteResultEnums.AGREE) {
                 agreeSet.add(resp.getVoteMemberId());
                 //become a leader
-                if (agreeSet.size() > (nodeState.getPeersMap().size() / 2)) {
+                if (agreeSet.size() >= (nodeState.getPeersMap().size() / 2) + 1) {
                     //upgrade to leader and disable this collector
                     if (available.compareAndSet(true, false)) {
 //                        this.nodeState.getTermAtomic().compareAndSet(this.voteTerm, this.voteTerm + 1);
@@ -87,7 +88,6 @@ public class PreVoteCollector implements InvokeCallback {
 
     private void reqToRealVote() {
         nodeState.setRole(RoleEnum.CANDIDATE);
-        nodeState.getTermAtomic().incrementAndGet();
         VoteCollector voteCollector = new VoteCollector(nodeState, elector);
         elector.getVoteCollectors().add(new WeakReference<>(voteCollector));
         elector.getClient().reqVote(voteCollector);

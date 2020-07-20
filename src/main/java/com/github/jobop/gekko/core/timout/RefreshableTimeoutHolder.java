@@ -23,10 +23,11 @@ import com.alipay.remoting.TimerHolder;
 import io.netty.util.HashedWheelTimer;
 import io.netty.util.Timeout;
 import io.netty.util.TimerTask;
+import lombok.extern.slf4j.Slf4j;
 
 import java.util.concurrent.TimeUnit;
 
-
+@Slf4j
 public class RefreshableTimeoutHolder {
     TimerTask task;
     long delay;
@@ -41,22 +42,25 @@ public class RefreshableTimeoutHolder {
 
     private Timeout newTimeout() {
         Timeout timeout = TimerHolder.getTimer().newTimeout(task, delay, unit);
+
         this.timeout = timeout;
+        log.debug("the newest timeout is " + this.timeout);
         return timeout;
     }
 
 
     public Timeout refresh() {
         if (null != timeout) {
-            if (timeout.isExpired()) {
-                //TODO:
-            } else {
-                timeout.cancel();
+//            if (timeout.isExpired()) {
+//                //TODO:
+//            } else {
+            log.debug("try to cancle the old timeout " + timeout);
+            if (timeout.cancel()) {
+                log.debug("cancled the old timeout " + timeout);
             }
-            return this.newTimeout();
-        } else {
-            return this.newTimeout();
+//            }
         }
+        return this.newTimeout();
     }
 
     public void cancel() {

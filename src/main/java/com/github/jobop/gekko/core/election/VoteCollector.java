@@ -49,38 +49,41 @@ public class VoteCollector implements InvokeCallback {
 
     public VoteCollector(NodeState nodeState, GekkoLeaderElector elector) {
         this.nodeState = nodeState;
-        this.voteTerm = nodeState.getTerm();
+        this.voteTerm = nodeState.getTermAtomic().incrementAndGet();
         agreeSet.add(nodeState.getSelfId());
         this.elector = elector;
     }
 
     @Override
     public void onResponse(Object result) {
-        VoteResp resp = (VoteResp) result;
-        if (resp.getTerm() != this.voteTerm) {
-            log.warn("this vote term has expired! term=" + this.getVoteTerm());
-            return;
-        }
-        if (this.voteTerm < nodeState.getTerm()) {
-            log.warn("this vote term has expired! term=" + this.getVoteTerm());
-            return;
-        }
+        synchronized (nodeState) {
+            VoteResp resp = (VoteResp) result;
+            if (resp.getTerm() != this.voteTerm) {
+                log.warn("this vote term has expired! term=" + this.getVoteTerm());
+                return;
+            }
 
-        if (available.get() == true) {
-            if (resp.getResult() == VoteResultEnums.AGREE) {
-                agreeSet.add(resp.getVoteMemberId());
-                //become a leader
-                if (agreeSet.size() > (nodeState.getPeersMap().size() / 2)) {
-                    //upgrade to leader and disable this collector
-                    if (available.compareAndSet(true, false)) {
+            long oldTerm = nodeState.getTerm();
+            if (this.voteTerm < oldTerm) {
+                log.warn("this vote term has expired! term=" + this.getVoteTerm());
+                return;
+            }
+
+            if (available.get() == true) {
+                if (resp.getResult() == VoteResultEnums.AGREE) {
+                    agreeSet.add(resp.getVoteMemberId());
+                    //become a leader
+                    if (agreeSet.size() >= (nodeState.getPeersMap().size() / 2) + 1) {
+                        //upgrade to leader and disable this collector
+                        if (available.compareAndSet(true, false)) {
 //                        this.nodeState.getTermAtomic().compareAndSet(this.voteTerm, this.voteTerm + 1);
-                        this.elector.becomeALeader();
+                            this.elector.becomeALeader();
+
+                        }
                     }
                 }
             }
         }
-
-
     }
 
     @Override

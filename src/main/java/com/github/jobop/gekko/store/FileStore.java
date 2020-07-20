@@ -96,8 +96,9 @@ public class FileStore extends AbstractStore {
     @Override
     public void append(GekkoEntry entry) {
         synchronized (this) {
+            long pos = dataFile.allocPos(entry.getTotalSize());
             if (nodeState.getSelfId() == nodeState.getLeaderId()) {
-                fillEntry(entry);
+                fillEntry(entry,pos);
             }
             //save data
             saveData(entry);
@@ -115,9 +116,8 @@ public class FileStore extends AbstractStore {
 
     }
 
-    private void fillEntry(GekkoEntry entry) {
+    private void fillEntry(GekkoEntry entry,long pos) {
         //set pos
-        long pos = dataFile.allocPos(entry.getTotalSize());
         entry.setPos(pos);
 
         //set index

@@ -35,11 +35,10 @@ public class FileStoreTest extends BaseTest {
     public void testAppendAndBatchGet() {
         String dirPath = "/Users/zhengwei/Desktop/autorollfiles";
         this.paths.add(dirPath);
-        GekkoConfig conf = GekkoConfig.builder().baseFilePath(dirPath).storeType(StoreEnums.FILE).flushInterval(1).storeFileSize(1024 * 1024).indexCountPerFile(100000).osPageSize(1024 * 4).build();
+        GekkoConfig conf = GekkoConfig.builder().baseFilePath(dirPath).selfId("1").leaderId("1").storeType(StoreEnums.FILE).flushInterval(1).storeFileSize(1024 * 1024).indexCountPerFile(100000).osPageSize(1024 * 4).build();
 
         NodeState nodeState=new NodeState(conf);
-        nodeState.setLeaderId("1");
-        nodeState.setSelfId("1");
+        nodeState.init();
         Store store = new FileStore(conf,nodeState);
         store.init();
         store.start();

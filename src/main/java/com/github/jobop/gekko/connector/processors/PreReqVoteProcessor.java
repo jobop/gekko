@@ -29,10 +29,12 @@ import com.github.jobop.gekko.protocols.message.node.PreVoteResp;
 import com.github.jobop.gekko.protocols.message.node.VoteReq;
 import com.github.jobop.gekko.protocols.message.node.VoteResp;
 import com.github.jobop.gekko.utils.ElectionUtils;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * process the vote req from condicatior
  */
+@Slf4j
 public class PreReqVoteProcessor extends DefaultProcessor<PreVoteReq> {
     GekkoLeaderElector elector;
 
@@ -48,8 +50,10 @@ public class PreReqVoteProcessor extends DefaultProcessor<PreVoteReq> {
         long nowLastIndex = nodeState.getCommitId();
         long remoteLastIndex = request.getLastIndex();
         if (ElectionUtils.judgVote(nowTerm, voteTerm, nowLastIndex, remoteLastIndex)) {
+            log.info("term " + voteTerm + " prevoted to " + request.getCandidateId() + " agree");
             asyncCtx.sendResponse(PreVoteResp.builder().term(voteTerm).voteMemberId(nodeState.getSelfId()).result(VoteResultEnums.AGREE).build());
         } else {
+            log.info("term " + voteTerm + " prevoted to " + request.getCandidateId() + " reject");
             asyncCtx.sendResponse(PreVoteResp.builder().term(voteTerm).voteMemberId(nodeState.getSelfId()).result(VoteResultEnums.REJECT).build());
         }
     }

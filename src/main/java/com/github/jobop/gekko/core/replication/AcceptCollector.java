@@ -36,6 +36,7 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
+
 @Slf4j
 public class AcceptCollector implements InvokeCallback {
     static Executor executor = Executors.newCachedThreadPool();
@@ -45,10 +46,10 @@ public class AcceptCollector implements InvokeCallback {
     private AtomicBoolean hasNotify = new AtomicBoolean(false);
     private GekkoEntry entry;
 
-    public AcceptCollector(GekkoEntry entry,NodeState nodeState, Consumer callback) {
+    public AcceptCollector(GekkoEntry entry, NodeState nodeState, Consumer callback) {
         this.callback = callback;
         this.nodeState = nodeState;
-        this.entry=entry;
+        this.entry = entry;
     }
 
 
@@ -57,9 +58,9 @@ public class AcceptCollector implements InvokeCallback {
         PushEntryResp resp = (PushEntryResp) result;
         if (resp.getResult() == PushResultEnums.AGREE) {
             agreeSet.add(resp.getAcceptNodeId());
-            if (agreeSet.size() > (nodeState.getPeersMap().size() / 2)) {
+            if (agreeSet.size() >= (nodeState.getPeersMap().size() / 2) + 1) {
                 if (hasNotify.compareAndSet(false, true)) {
-                    if(nodeState.getCommitId()<resp.getIndex()){
+                    if (nodeState.getCommitId() < resp.getIndex()) {
                         nodeState.setCommitId(resp.getIndex());
                     }
                     callback.accept(this.entry);
@@ -70,7 +71,7 @@ public class AcceptCollector implements InvokeCallback {
 
     @Override
     public void onException(Throwable e) {
-        log.error("",e);
+        log.error("", e);
     }
 
     @Override

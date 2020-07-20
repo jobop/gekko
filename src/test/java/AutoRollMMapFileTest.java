@@ -47,10 +47,25 @@ public class AutoRollMMapFileTest extends BaseTest {
 
     @Test
     public void testLoadAAutoRollMappFile() {
-        this.testNewAAutoRollMappFile();
-        AutoRollMMapFile file = new AutoRollMMapFile("/Users/zhengwei/Desktop/autorollfiles", 1024 * 1024, 1024 * 4);
-        file.load();
-        Assert.assertTrue(file.checksum());
+
+        String dirPath = "/Users/zhengwei/Desktop/autorollfiles";
+        this.paths.add(dirPath);
+        SequenceFile file = new AutoRollMMapFile("/Users/zhengwei/Desktop/autorollfiles", 1024 * 1024, 1024 * 4);
+        byte[] bytes = "1sdfasdfasdfasdfasdfasdfasdfadf54545fasdfasdfasdfasdfasdfasdfadfa53345dfasdfasdfasdfasdfasdfasdfad9081nvsdfasdfasdfasdfasdfasdfadfasdfasdfasdfasdfasdfasdfasdfadfasdfasdfasdfasdfasdfasdfasdfad2".getBytes();
+        System.out.println();
+        double totallength = 0;
+        long startTime = System.currentTimeMillis();
+
+        for (int i = 0; i < 10000000; i++) {
+            file.appendMessage(bytes);
+            totallength += bytes.length;
+        }
+        System.out.println("每个数据大小=" + bytes.length + " 写入10000000次" + " 总数据大小=" + totallength / 1024 / 1024 / 1024 + "G " + "耗时=" + (System.currentTimeMillis() - startTime) + "ms");
+
+
+        AutoRollMMapFile autoRollMMapFile = new AutoRollMMapFile("/Users/zhengwei/Desktop/autorollfiles", 1024 * 1024, 1024 * 4);
+        autoRollMMapFile.load();
+        Assert.assertTrue(autoRollMMapFile.checksum());
 
     }
 

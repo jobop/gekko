@@ -51,7 +51,7 @@ public class NodeState extends LifeCycleAdpter {
 
     public void init() {
         this.selfId = this.config.getSelfId();
-        this.leaderId = "";
+        this.leaderId = this.config.getLeaderId();
         this.role = RoleEnum.FOLLOWER;
         this.termAtomic = new AtomicLong(-1);
         this.writeId = -1;

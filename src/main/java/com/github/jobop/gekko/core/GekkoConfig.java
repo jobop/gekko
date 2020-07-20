@@ -37,6 +37,7 @@ public class GekkoConfig {
     @Singular
     Set<String> peerIds;
     String selfId;
+    String leaderId;
 
     StateMachine stateMachine = new NoopStateMachine();
 

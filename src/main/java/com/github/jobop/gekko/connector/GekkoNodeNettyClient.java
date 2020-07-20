@@ -64,18 +64,13 @@ public class GekkoNodeNettyClient extends LifeCycleAdpter implements GekkoNodeCo
 
     @Override
     public void init() {
-//        for (Map.Entry<String, Peer> e : this.nodeState.getPeersMap().entrySet()) {
-//            String peerId = e.getKey();
-//            Peer peer = e.getValue();
-//
-//            orderNodesRpcClient.put(peerId,new RpcClient())
-//        }
         orderNodesRpcClient = new RpcClient();
 
     }
 
     @Override
     public void start() {
+        orderNodesRpcClient.startup();
     }
 
     @Override
@@ -86,16 +81,19 @@ public class GekkoNodeNettyClient extends LifeCycleAdpter implements GekkoNodeCo
     @Override
     public void sendHeartBeat() {
         if (this.nodeState.getRole() != RoleEnum.LEADER) {
-            log.warn("not a leader can not send hearbeat!");
+            log.warn("not a leader can not send hearbeat! the role is " + this.nodeState.getRole());
             return;
         }
         for (Map.Entry<String, Peer> e : this.nodeState.getPeersMap().entrySet()) {
             String peerId = e.getKey();
+            if (peerId.equals(this.nodeState.getSelfId())) {
+                continue;
+            }
             Peer peer = e.getValue();
             try {
                 orderNodesRpcClient.oneway(peer.getHost() + ":" + peer.getPort(), HeartBeatReq.builder().remoteNodeId(nodeState.getSelfId()).term(nodeState.getTerm()).build());
             } catch (RemotingException remotingException) {
-                remotingException.printStackTrace();
+                log.warn("waiting the node " + peer.getHost() + ":" + peer.getPort() + " to connect!");
             } catch (InterruptedException interruptedException) {
                 interruptedException.printStackTrace();
             }
@@ -107,12 +105,14 @@ public class GekkoNodeNettyClient extends LifeCycleAdpter implements GekkoNodeCo
     public void preVote(PreVoteCollector preVoteCollector) {
         for (Map.Entry<String, Peer> e : this.nodeState.getPeersMap().entrySet()) {
             String peerId = e.getKey();
+            if (peerId.equals(this.nodeState.getSelfId())) {
+                continue;
+            }
             Peer peer = e.getValue();
             try {
-                //FIXME:
                 orderNodesRpcClient.invokeWithCallback(peer.getHost() + ":" + peer.getPort(), PreVoteReq.builder().term(preVoteCollector.getVoteTerm()).candidateId(nodeState.getSelfId()).lastIndex(nodeState.getCommitId()).build(), preVoteCollector, WAIT_FOR_VOTE_TIME_OUT);
             } catch (RemotingException remotingException) {
-                remotingException.printStackTrace();
+                log.warn("waiting for " + peer.getHost() + ":" + peer.getPort() + " to connect!");
             } catch (InterruptedException interruptedException) {
                 interruptedException.printStackTrace();
             }
@@ -123,6 +123,9 @@ public class GekkoNodeNettyClient extends LifeCycleAdpter implements GekkoNodeCo
     public void reqVote(VoteCollector voteCollector) {
         for (Map.Entry<String, Peer> e : this.nodeState.getPeersMap().entrySet()) {
             String peerId = e.getKey();
+            if (peerId.equals(this.nodeState.getSelfId())) {
+                continue;
+            }
             Peer peer = e.getValue();
             try {
                 //FIXME:
@@ -143,6 +146,9 @@ public class GekkoNodeNettyClient extends LifeCycleAdpter implements GekkoNodeCo
         }
         for (Map.Entry<String, Peer> e : this.nodeState.getPeersMap().entrySet()) {
             String peerId = e.getKey();
+            if (peerId.equals(this.nodeState.getSelfId())) {
+                continue;
+            }
             Peer peer = e.getValue();
             //TODO:
             try {

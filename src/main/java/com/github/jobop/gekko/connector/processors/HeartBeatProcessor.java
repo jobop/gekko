@@ -23,10 +23,12 @@ import com.alipay.remoting.BizContext;
 import com.github.jobop.gekko.core.election.GekkoLeaderElector;
 import com.github.jobop.gekko.protocols.GekkoInboundProtocol;
 import com.github.jobop.gekko.protocols.message.node.HeartBeatReq;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * process the heartbeat req from leader
  */
+@Slf4j
 public class HeartBeatProcessor extends DefaultProcessor<HeartBeatReq> {
     GekkoLeaderElector elector;
 
@@ -36,10 +38,11 @@ public class HeartBeatProcessor extends DefaultProcessor<HeartBeatReq> {
     }
 
     public void handleRequest(BizContext bizCtx, AsyncContext asyncCtx, HeartBeatReq request) {
-
+        log.info("received a heartbeat from leader remote term=" + request.getTerm() + " leader =" + request.getRemoteNodeId() + " local term=" + elector.getState().getTerm() + " remote term=" + request.getTerm());
         if (request.getTerm() < elector.getState().getTerm()) {
             return;
         }
+
         this.elector.becomeAFollower(request.getTerm(), request.getRemoteNodeId());
     }
 
