@@ -31,6 +31,7 @@ import java.util.List;
 @Data
 @Builder
 public class PushEntryResp implements Serializable {
+    private String group;
     long term;
     long index;
     String acceptNodeId;

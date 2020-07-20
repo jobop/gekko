@@ -28,6 +28,7 @@ import java.io.Serializable;
 @Data
 @Builder
 public class PreVoteResp implements Serializable {
+    private String group;
     private long term;
     private String voteMemberId;
     private VoteResultEnums result;

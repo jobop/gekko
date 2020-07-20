@@ -44,17 +44,25 @@ public class PreReqVoteProcessor extends DefaultProcessor<PreVoteReq> {
     }
 
     public void handleRequest(BizContext bizCtx, AsyncContext asyncCtx, PreVoteReq request) {
+
         NodeState nodeState = elector.getState();
         long nowTerm = nodeState.getTerm();
         long voteTerm = request.getTerm();
         long nowLastIndex = nodeState.getCommitId();
         long remoteLastIndex = request.getLastIndex();
+
+        if (!elector.getState().getGroup().equals(request.getGroup())) {
+            log.info("term " + voteTerm + " prevoted to " + request.getCandidateId() + " reject");
+            asyncCtx.sendResponse(PreVoteResp.builder().group(elector.getState().getGroup()).term(voteTerm).voteMemberId(elector.getState().getSelfId()).result(VoteResultEnums.REJECT).build());
+            return;
+        }
+
         if (ElectionUtils.judgVote(nowTerm, voteTerm, nowLastIndex, remoteLastIndex)) {
             log.info("term " + voteTerm + " prevoted to " + request.getCandidateId() + " agree");
-            asyncCtx.sendResponse(PreVoteResp.builder().term(voteTerm).voteMemberId(nodeState.getSelfId()).result(VoteResultEnums.AGREE).build());
+            asyncCtx.sendResponse(PreVoteResp.builder().group(nodeState.getGroup()).term(voteTerm).voteMemberId(nodeState.getSelfId()).result(VoteResultEnums.AGREE).build());
         } else {
             log.info("term " + voteTerm + " prevoted to " + request.getCandidateId() + " reject");
-            asyncCtx.sendResponse(PreVoteResp.builder().term(voteTerm).voteMemberId(nodeState.getSelfId()).result(VoteResultEnums.REJECT).build());
+            asyncCtx.sendResponse(PreVoteResp.builder().group(nodeState.getGroup()).term(voteTerm).voteMemberId(nodeState.getSelfId()).result(VoteResultEnums.REJECT).build());
         }
     }
 

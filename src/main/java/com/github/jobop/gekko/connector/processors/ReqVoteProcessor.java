@@ -25,6 +25,7 @@ import com.github.jobop.gekko.core.metadata.NodeState;
 import com.github.jobop.gekko.enums.RoleEnum;
 import com.github.jobop.gekko.enums.VoteResultEnums;
 import com.github.jobop.gekko.protocols.GekkoInboundProtocol;
+import com.github.jobop.gekko.protocols.message.node.PreVoteResp;
 import com.github.jobop.gekko.protocols.message.node.VoteReq;
 import com.github.jobop.gekko.protocols.message.node.VoteResp;
 import com.github.jobop.gekko.utils.ElectionUtils;
@@ -47,18 +48,22 @@ public class ReqVoteProcessor extends DefaultProcessor<VoteReq> {
         long nowTerm = nodeState.getTerm();
         long voteTerm = request.getTerm();
 
-        long nowLastIndex=nodeState.getCommitId();
-        long remoteLastIndex=request.getLastIndex();
-
-        if (ElectionUtils.judgVote(nowTerm, voteTerm,nowLastIndex,remoteLastIndex)) {
+        long nowLastIndex = nodeState.getCommitId();
+        long remoteLastIndex = request.getLastIndex();
+        if (!elector.getState().getGroup().equals(request.getGroup())) {
+            log.info("term " + voteTerm + " voted to " + request.getCandidateId() + " reject");
+            asyncCtx.sendResponse(VoteResp.builder().group(elector.getState().getGroup()).term(voteTerm).voteMemberId(elector.getState().getSelfId()).result(VoteResultEnums.REJECT).build());
+            return;
+        }
+        if (ElectionUtils.judgVote(nowTerm, voteTerm, nowLastIndex, remoteLastIndex)) {
             if (nodeState.getTermAtomic().compareAndSet(nowTerm, voteTerm)) {
-                log.info("term "+voteTerm +" voted to "+request.getCandidateId());
-                asyncCtx.sendResponse(VoteResp.builder().term(voteTerm).voteMemberId(nodeState.getSelfId()).result(VoteResultEnums.AGREE).build());
+                log.info("term " + voteTerm + " voted to " + request.getCandidateId());
+                asyncCtx.sendResponse(VoteResp.builder().group(nodeState.getGroup()).term(voteTerm).voteMemberId(nodeState.getSelfId()).result(VoteResultEnums.AGREE).build());
             } else {
-                asyncCtx.sendResponse(VoteResp.builder().term(voteTerm).voteMemberId(nodeState.getSelfId()).result(VoteResultEnums.REJECT).build());
+                asyncCtx.sendResponse(VoteResp.builder().group(nodeState.getGroup()).term(voteTerm).voteMemberId(nodeState.getSelfId()).result(VoteResultEnums.REJECT).build());
             }
         } else {
-            asyncCtx.sendResponse(VoteResp.builder().term(voteTerm).voteMemberId(nodeState.getSelfId()).result(VoteResultEnums.REJECT).build());
+            asyncCtx.sendResponse(VoteResp.builder().group(nodeState.getGroup()).term(voteTerm).voteMemberId(nodeState.getSelfId()).result(VoteResultEnums.REJECT).build());
         }
     }
 

@@ -25,6 +25,6 @@ import java.io.Serializable;
 
 @Data
 public class HeartBeatResp implements Serializable {
-
+    private String group;
     String code;
 }

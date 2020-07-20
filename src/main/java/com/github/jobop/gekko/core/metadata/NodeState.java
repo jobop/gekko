@@ -40,6 +40,7 @@ public class NodeState extends LifeCycleAdpter {
         this.config = config;
     }
 
+    private String group;
     private String selfId;
     private volatile String leaderId;
     private volatile RoleEnum role;
@@ -50,6 +51,7 @@ public class NodeState extends LifeCycleAdpter {
     private volatile Map<String, Peer> peersMap = new ConcurrentHashMap<String, Peer>();
 
     public void init() {
+        this.group = this.config.getGroup();
         this.selfId = this.config.getSelfId();
         this.leaderId = this.config.getLeaderId();
         this.role = RoleEnum.FOLLOWER;

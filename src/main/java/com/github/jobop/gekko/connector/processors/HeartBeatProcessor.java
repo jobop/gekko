@@ -39,6 +39,10 @@ public class HeartBeatProcessor extends DefaultProcessor<HeartBeatReq> {
 
     public void handleRequest(BizContext bizCtx, AsyncContext asyncCtx, HeartBeatReq request) {
         log.info("received a heartbeat from leader remote term=" + request.getTerm() + " leader =" + request.getRemoteNodeId() + " local term=" + elector.getState().getTerm() + " remote term=" + request.getTerm());
+
+        if (!elector.getState().getGroup().equals(request.getGroup())) {
+            return;
+        }
         if (request.getTerm() < elector.getState().getTerm()) {
             return;
         }

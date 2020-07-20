@@ -27,6 +27,7 @@ import java.io.Serializable;
 @Data
 @Builder
 public class VoteReq implements Serializable {
+    private String group;
     private long term;
     private String candidateId;
     private long lastIndex;

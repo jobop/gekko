@@ -26,6 +26,7 @@ import com.github.jobop.gekko.protocols.message.GekkoEntry;
 public class TestNode3 {
     public static void main(String[] args) {
         GekkoConfig conf = GekkoConfig.builder()
+                .group("group1")
                 .peer("127.0.0.1:8080").peerId("1")
                 .peer("127.0.0.1:9090").peerId("2")
                 .peer("127.0.0.1:7070").peerId("3")

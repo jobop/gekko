@@ -123,12 +123,12 @@ public class GekkoInboundMsgHelper implements GekkoInboundProtocol {
     public synchronized PushEntryResp handlePushDatas(PushEntryReq req) {
         GekkoEntry entry = req.getEntries().get(0);
         if (this.nodeState.getCommitId() >= entry.getEntryIndex()) {
-            return PushEntryResp.builder().acceptNodeId(nodeState.getSelfId()).index(entry.getEntryIndex()).term(nodeState.getTerm()).result(PushResultEnums.AGREE).build();
+            return PushEntryResp.builder().group(nodeState.getGroup()).acceptNodeId(nodeState.getSelfId()).index(entry.getEntryIndex()).term(nodeState.getTerm()).result(PushResultEnums.AGREE).build();
         }
         if (this.nodeState.getWriteId() >= entry.getEntryIndex()) {
             GekkoEntry oleEntry = this.store.getByIndex(entry.getEntryIndex());
             if (oleEntry.getChecksum() == entry.getChecksum()) {
-                return PushEntryResp.builder().acceptNodeId(nodeState.getSelfId()).index(entry.getEntryIndex()).term(nodeState.getTerm()).result(PushResultEnums.AGREE).build();
+                return PushEntryResp.builder().group(nodeState.getGroup()).acceptNodeId(nodeState.getSelfId()).index(entry.getEntryIndex()).term(nodeState.getTerm()).result(PushResultEnums.AGREE).build();
             }
         }
 
@@ -138,9 +138,9 @@ public class GekkoInboundMsgHelper implements GekkoInboundProtocol {
             this.store.append(entry);
             if (entry.getPos() != -1) {
                 this.nodeState.setLastChecksum(entry.getChecksum());
-                return PushEntryResp.builder().acceptNodeId(nodeState.getSelfId()).index(entry.getEntryIndex()).term(nodeState.getTerm()).result(PushResultEnums.AGREE).build();
+                return PushEntryResp.builder().group(nodeState.getGroup()).acceptNodeId(nodeState.getSelfId()).index(entry.getEntryIndex()).term(nodeState.getTerm()).result(PushResultEnums.AGREE).build();
             } else {
-                return PushEntryResp.builder().acceptNodeId(nodeState.getSelfId()).term(nodeState.getTerm()).result(PushResultEnums.REJECT).build();
+                return PushEntryResp.builder().group(nodeState.getGroup()).acceptNodeId(nodeState.getSelfId()).term(nodeState.getTerm()).result(PushResultEnums.REJECT).build();
             }
 
         } else {
@@ -153,7 +153,7 @@ public class GekkoInboundMsgHelper implements GekkoInboundProtocol {
             for (GekkoEntry e : entries) {
                 this.store.append(e);
             }
-            return PushEntryResp.builder().acceptNodeId(nodeState.getSelfId()).index(entry.getEntryIndex()).term(nodeState.getTerm()).result(PushResultEnums.AGREE).build();
+            return PushEntryResp.builder().group(nodeState.getGroup()).acceptNodeId(nodeState.getSelfId()).index(entry.getEntryIndex()).term(nodeState.getTerm()).result(PushResultEnums.AGREE).build();
         }
 
     }
