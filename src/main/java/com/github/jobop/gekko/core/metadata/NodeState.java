@@ -33,7 +33,6 @@ import java.util.concurrent.atomic.AtomicLong;
 
 
 @Data
-@Builder
 public class NodeState extends LifeCycleAdpter {
     private GekkoConfig config;
 

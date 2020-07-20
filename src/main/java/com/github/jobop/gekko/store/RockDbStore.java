@@ -20,10 +20,11 @@ package com.github.jobop.gekko.store;
 
 
 import com.github.jobop.gekko.core.GekkoConfig;
+import com.github.jobop.gekko.core.metadata.NodeState;
 
 
 public class RockDbStore extends AbstractStore{
-    public RockDbStore(GekkoConfig conf) {
-        super(conf);
+    public RockDbStore(GekkoConfig conf, NodeState nodeState) {
+        super(conf,nodeState);
     }
 }

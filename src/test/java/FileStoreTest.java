@@ -36,7 +36,11 @@ public class FileStoreTest extends BaseTest {
         String dirPath = "/Users/zhengwei/Desktop/autorollfiles";
         this.paths.add(dirPath);
         GekkoConfig conf = GekkoConfig.builder().baseFilePath(dirPath).storeType(StoreEnums.FILE).flushInterval(1).storeFileSize(1024 * 1024).indexCountPerFile(100000).osPageSize(1024 * 4).build();
-        Store store = new FileStore(conf, NodeState.builder().leaderId("1").selfId("1").build());
+
+        NodeState nodeState=new NodeState(conf);
+        nodeState.setLeaderId("1");
+        nodeState.setSelfId("1");
+        Store store = new FileStore(conf,nodeState);
         store.init();
         store.start();
         String appendStr = "1sdfasdfasdfasdfasdfasdfasdfadf54545fasdfasdfasdfasdfasdfasdfadfa53345dfasdfasdfasdfasdfasdfasdfad9081nvsdfasdfasdfasdfasdfasdfadfasdfasdfasdfasdfasdfasdfasdfadfasdfasdfasdfasdfasdfasdfasdfad2";
@@ -100,7 +104,11 @@ public class FileStoreTest extends BaseTest {
 
         System.out.println("end normal ");
         //Test load
-        Store store2 = new FileStore(conf,NodeState.builder().leaderId("1").selfId("1").build());
+
+        NodeState state=new NodeState(conf);
+        state.setLeaderId("1");
+        state.setSelfId("1");
+        Store store2 = new FileStore(conf,state);
         store2.init();
         store2.start();
         List<GekkoEntry> batchGetByIndexEntries2 = store2.batchGetByIndex(66666, 99999);

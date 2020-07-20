@@ -20,11 +20,12 @@ package com.github.jobop.gekko.store;
 
 
 import com.github.jobop.gekko.core.GekkoConfig;
+import com.github.jobop.gekko.core.metadata.NodeState;
 
 
 public class MemoryStore extends AbstractStore{
 
-    public MemoryStore(GekkoConfig conf) {
-        super(conf);
+    public MemoryStore(GekkoConfig conf, NodeState nodeState) {
+        super(conf,nodeState);
     }
 }

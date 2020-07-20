@@ -50,11 +50,11 @@ public class GekkoNode extends LifeCycleAdpter {
         this.conf = conf;
         this.nodeState = new NodeState(this.conf);
         if (conf.getStoreType() == StoreEnums.MEMORY) {
-            this.store = new MemoryStore(conf);
+            this.store = new MemoryStore(conf,this.nodeState);
         } else if (conf.getStoreType() == StoreEnums.FILE) {
             this.store = new FileStore(conf,this.nodeState);
         } else if (conf.getStoreType() == StoreEnums.ROCKDB) {
-            this.store = new RockDbStore(conf);
+            this.store = new RockDbStore(conf,this.nodeState);
         }
 
         this.stateMachine = conf.getStateMachine();
