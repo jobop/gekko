@@ -36,5 +36,8 @@ public interface Store extends LifeCycle {
 
     public List<GekkoEntry> batchGetByIndex(long fromIndex, long toIndex);
 
+    public void trimAfter(long fromIndex);
+    public void trimBefore(long toIndex);
+
 
 }

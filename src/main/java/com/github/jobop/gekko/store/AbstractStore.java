@@ -72,4 +72,14 @@ public  class AbstractStore extends LifeCycleAdpter implements com.github.jobop.
     public List<GekkoEntry> batchGetByIndex(long fromIndex, long toIndex) {
         return null;
     }
+
+    @Override
+    public void trimAfter(long fromIndex) {
+
+    }
+
+    @Override
+    public void trimBefore(long toIndex) {
+
+    }
 }

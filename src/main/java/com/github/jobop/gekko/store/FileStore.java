@@ -200,4 +200,10 @@ public class FileStore extends AbstractStore {
         localDataBuffer.get().get(bytes);
         dataFile.appendMessage(bytes);
     }
+
+    public void trimAfter(long fromIndex) {
+    }
+
+    public void trimBefore(long toIndex) {
+    }
 }

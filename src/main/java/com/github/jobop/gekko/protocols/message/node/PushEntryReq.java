@@ -36,7 +36,9 @@ public class PushEntryReq implements Serializable {
      */
     private static final long serialVersionUID = -1288207208017808618L;
     private String remoteNodeId;
+    private long lastCommitIndex;
     private long term;
+    private long preCheckSum;
     @Singular
     List<GekkoEntry> entries = new ArrayList<>();
 }

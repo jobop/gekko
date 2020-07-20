@@ -47,6 +47,7 @@ public class NodeState extends LifeCycleAdpter {
     private volatile AtomicLong termAtomic;
     private volatile long writeId;
     private volatile long commitId;
+    private volatile long lastChecksum;
     private volatile Map<String, Peer> peersMap = new ConcurrentHashMap<String, Peer>();
 
     public void init() {

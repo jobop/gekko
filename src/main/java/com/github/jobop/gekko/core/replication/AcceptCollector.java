@@ -59,6 +59,9 @@ public class AcceptCollector implements InvokeCallback {
             agreeSet.add(resp.getAcceptNodeId());
             if (agreeSet.size() > (nodeState.getPeersMap().size() / 2)) {
                 if (hasNotify.compareAndSet(false, true)) {
+                    if(nodeState.getCommitId()<resp.getIndex()){
+                        nodeState.setCommitId(resp.getIndex());
+                    }
                     callback.accept(this.entry);
                 }
             }

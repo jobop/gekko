@@ -56,7 +56,7 @@ public class GekkoInboundMsgHelper implements GekkoInboundProtocol {
      */
     @Override
     public PullEntryResp handleGetEntries(PullEntryReq req) {
-        List<GekkoEntry> entries= store.batchGetByIndex(req.getFromIndex(),req.getToIndex());
+        List<GekkoEntry> entries = store.batchGetByIndex(req.getFromIndex(), req.getToIndex());
         return PullEntryResp.builder().enries(entries).build();
     }
 
@@ -73,6 +73,10 @@ public class GekkoInboundMsgHelper implements GekkoInboundProtocol {
         if (entry.getPos() == -1) {
             consumer.accept(entry);
             return;
+        }
+        if (nodeState.getWriteId() < entry.getEntryIndex()) {
+            nodeState.setWriteId(entry.getEntryIndex());
+            nodeState.setLastChecksum(entry.getChecksum());
         }
         entriesSynchronizer.append(entry, consumer);
     }
@@ -119,13 +123,43 @@ public class GekkoInboundMsgHelper implements GekkoInboundProtocol {
      * @return
      */
     @Override
-    public PushEntryResp handlePushDatas(PushEntryReq req) {
+    public synchronized PushEntryResp handlePushDatas(PushEntryReq req) {
         GekkoEntry entry = req.getEntries().get(0);
-        this.store.append(entry);
-        if (entry.getPos() != -1) {
+        if (this.nodeState.getCommitId() >= entry.getEntryIndex()) {
             return PushEntryResp.builder().acceptNodeId(nodeState.getSelfId()).index(entry.getEntryIndex()).term(nodeState.getTerm()).result(PushResultEnums.AGREE).build();
+        }
+        if (this.nodeState.getWriteId() >= entry.getEntryIndex()) {
+            GekkoEntry oleEntry = this.store.getByIndex(entry.getEntryIndex());
+            if (oleEntry.getChecksum() == entry.getChecksum()) {
+                return PushEntryResp.builder().acceptNodeId(nodeState.getSelfId()).index(entry.getEntryIndex()).term(nodeState.getTerm()).result(PushResultEnums.AGREE).build();
+            }
+        }
+
+        //normal
+        if (this.nodeState.getLastChecksum() == req.getPreCheckSum()) {
+            nodeState.setCommitId(req.getLastCommitIndex());
+            this.store.append(entry);
+            if (entry.getPos() != -1) {
+                this.nodeState.setLastChecksum(entry.getChecksum());
+                return PushEntryResp.builder().acceptNodeId(nodeState.getSelfId()).index(entry.getEntryIndex()).term(nodeState.getTerm()).result(PushResultEnums.AGREE).build();
+            } else {
+                return PushEntryResp.builder().acceptNodeId(nodeState.getSelfId()).term(nodeState.getTerm()).result(PushResultEnums.REJECT).build();
+            }
+
         } else {
-            return PushEntryResp.builder().acceptNodeId(nodeState.getSelfId()).term(nodeState.getTerm()).result(PushResultEnums.REJECT).build();
+            //roll back their uncommitted and batch pull from leader
+            //roll back
+            long fromIndex = nodeState.getCommitId();
+            long toIndex = entry.getEntryIndex();
+            this.store.trimAfter(fromIndex);
+            List<GekkoEntry> entries = this.store.batchGetByIndex(fromIndex, toIndex);
+            for (GekkoEntry e : entries) {
+                this.store.append(e);
+                if (e.getPos() != -1) {
+                    this.nodeState.setLastChecksum(e.getChecksum());
+                }
+            }
+            return PushEntryResp.builder().acceptNodeId(nodeState.getSelfId()).index(entry.getEntryIndex()).term(nodeState.getTerm()).result(PushResultEnums.AGREE).build();
         }
 
     }

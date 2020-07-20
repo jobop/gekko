@@ -110,7 +110,7 @@ public class GekkoNodeNettyClient extends LifeCycleAdpter implements GekkoNodeCo
             Peer peer = e.getValue();
             try {
                 //FIXME:
-                orderNodesRpcClient.invokeWithCallback(peer.getHost() + ":" + peer.getPort(), PreVoteReq.builder().term(preVoteCollector.getVoteTerm()).candidateId(nodeState.getSelfId()).build(), preVoteCollector, WAIT_FOR_VOTE_TIME_OUT);
+                orderNodesRpcClient.invokeWithCallback(peer.getHost() + ":" + peer.getPort(), PreVoteReq.builder().term(preVoteCollector.getVoteTerm()).candidateId(nodeState.getSelfId()).lastIndex(nodeState.getCommitId()).build(), preVoteCollector, WAIT_FOR_VOTE_TIME_OUT);
             } catch (RemotingException remotingException) {
                 remotingException.printStackTrace();
             } catch (InterruptedException interruptedException) {
@@ -126,7 +126,7 @@ public class GekkoNodeNettyClient extends LifeCycleAdpter implements GekkoNodeCo
             Peer peer = e.getValue();
             try {
                 //FIXME:
-                orderNodesRpcClient.invokeWithCallback(peer.getHost() + ":" + peer.getPort(), VoteReq.builder().term(voteCollector.getVoteTerm()).candidateId(nodeState.getSelfId()).build(), voteCollector, WAIT_FOR_VOTE_TIME_OUT);
+                orderNodesRpcClient.invokeWithCallback(peer.getHost() + ":" + peer.getPort(), VoteReq.builder().term(voteCollector.getVoteTerm()).candidateId(nodeState.getSelfId()).lastIndex(nodeState.getCommitId()).build(), voteCollector, WAIT_FOR_VOTE_TIME_OUT);
             } catch (RemotingException remotingException) {
                 remotingException.printStackTrace();
             } catch (InterruptedException interruptedException) {
@@ -146,7 +146,7 @@ public class GekkoNodeNettyClient extends LifeCycleAdpter implements GekkoNodeCo
             Peer peer = e.getValue();
             //TODO:
             try {
-                orderNodesRpcClient.invokeWithCallback(peer.getHost() + ":" + peer.getPort(), PushEntryReq.builder().entries(entries).build(), callback, WAIT_FOR_PUSH_TIME_OUT);
+                orderNodesRpcClient.invokeWithCallback(peer.getHost() + ":" + peer.getPort(), PushEntryReq.builder().entries(entries).remoteNodeId(nodeState.getSelfId()).term(nodeState.getTerm()).lastCommitIndex(nodeState.getCommitId()).preCheckSum(nodeState.getLastChecksum()).build(), callback, WAIT_FOR_PUSH_TIME_OUT);
             } catch (RemotingException remotingException) {
                 remotingException.printStackTrace();
             } catch (InterruptedException interruptedException) {
