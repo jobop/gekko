@@ -95,7 +95,6 @@ public class FileStore extends AbstractStore {
 
     @Override
     public void append(GekkoEntry entry) {
-        //FIXME:
         synchronized (this) {
             if (nodeState.getSelfId() == nodeState.getLeaderId()) {
                 fillEntry(entry);
@@ -105,6 +104,13 @@ public class FileStore extends AbstractStore {
             //save index
             GekkoIndex index = GekkoIndex.builder().magic(0xCAFEDADE).totalSize(GekkoIndex.INDEX_SIZE).dataPos(entry.getPos()).dataIndex(entry.getEntryIndex()).dataSize(entry.getTotalSize()).build();
             saveIndex(index);
+
+            if (entry.getPos() != -1) {
+                if (nodeState.getWriteId() < entry.getEntryIndex()) {
+                    nodeState.setWriteId(entry.getEntryIndex());
+                    nodeState.setLastChecksum(entry.getChecksum());
+                }
+            }
         }
 
     }
@@ -187,11 +193,11 @@ public class FileStore extends AbstractStore {
         return this.batchGet(fromGekkoIndex.getDataPos(), toGekkoIndex.getDataPos());
     }
 
-    private void saveIndex(GekkoIndex index) {
+    private long saveIndex(GekkoIndex index) {
         CodecUtils.encodeIndex(index, localIndexBuffer.get());
         byte[] indexbytes = new byte[localIndexBuffer.get().remaining()];
         localIndexBuffer.get().get(indexbytes);
-        long indexPos = indexFile.appendMessage(indexbytes);
+        return indexFile.appendMessage(indexbytes);
     }
 
     private void saveData(GekkoEntry entry) {
@@ -202,6 +208,13 @@ public class FileStore extends AbstractStore {
     }
 
     public void trimAfter(long fromIndex) {
+        GekkoIndex index = getGekkoIndex(fromIndex);
+        this.dataFile.trimAfter(index.getDataPos());
+        this.indexFile.trimAfter(fromIndex * GekkoIndex.INDEX_SIZE);
+
+        this.nodeState.setWriteId(fromIndex);
+        this.nodeState.setCommitId(fromIndex);
+        this.nodeState.setLastChecksum(this.getByIndex(fromIndex).getChecksum());
     }
 
     public void trimBefore(long toIndex) {

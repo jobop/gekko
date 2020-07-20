@@ -74,10 +74,7 @@ public class GekkoInboundMsgHelper implements GekkoInboundProtocol {
             consumer.accept(entry);
             return;
         }
-        if (nodeState.getWriteId() < entry.getEntryIndex()) {
-            nodeState.setWriteId(entry.getEntryIndex());
-            nodeState.setLastChecksum(entry.getChecksum());
-        }
+
         entriesSynchronizer.append(entry, consumer);
     }
 
@@ -155,9 +152,6 @@ public class GekkoInboundMsgHelper implements GekkoInboundProtocol {
             List<GekkoEntry> entries = this.store.batchGetByIndex(fromIndex, toIndex);
             for (GekkoEntry e : entries) {
                 this.store.append(e);
-                if (e.getPos() != -1) {
-                    this.nodeState.setLastChecksum(e.getChecksum());
-                }
             }
             return PushEntryResp.builder().acceptNodeId(nodeState.getSelfId()).index(entry.getEntryIndex()).term(nodeState.getTerm()).result(PushResultEnums.AGREE).build();
         }
