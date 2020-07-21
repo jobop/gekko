@@ -29,5 +29,5 @@ public interface SlicedAble {
 
     SlicedByteBuffer selectMappedBuffer(long pos);
 
-    List<SlicedByteBuffer> selectMutilBufferToRead(long pos, int size);
+    List<SlicedByteBuffer> selectMutilBufferToRead(long pos, long size);
 }

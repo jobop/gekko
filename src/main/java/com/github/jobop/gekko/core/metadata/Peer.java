@@ -29,5 +29,6 @@ import java.io.Serializable;
 @Data
 public class Peer implements Serializable {
     private String host;
-    private int port;
+    private int nodePort;
+    private int apiPort;
 }

@@ -33,6 +33,7 @@ import org.apache.commons.io.FileUtils;
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
@@ -98,7 +99,7 @@ public class FileStore extends AbstractStore {
         synchronized (this) {
             long pos = dataFile.allocPos(entry.getTotalSize());
             if (nodeState.getSelfId() == nodeState.getLeaderId()) {
-                fillEntry(entry,pos);
+                fillEntry(entry, pos);
             }
             //save data
             saveData(entry);
@@ -116,12 +117,12 @@ public class FileStore extends AbstractStore {
 
     }
 
-    private void fillEntry(GekkoEntry entry,long pos) {
+    private void fillEntry(GekkoEntry entry, long pos) {
         //set pos
         entry.setPos(pos);
 
         //set index
-        long dataIndex = indexFile.getMaxOffset() / GekkoIndex.INDEX_SIZE;
+        long dataIndex = indexFile.getMaxOffset() / GekkoIndex.INDEX_SIZE + 1;
         entry.setEntryIndex(dataIndex);
         //set term
         entry.setTerm(this.nodeState.getTerm());
@@ -172,11 +173,19 @@ public class FileStore extends AbstractStore {
     }
 
     private GekkoIndex getGekkoIndex(long dataIndex) {
+        if (dataIndex < 1) {
+            return null;
+        }
         SlicedByteBuffer indexslicedByteBuffer = null;
         GekkoIndex index = null;
         try {
-            indexslicedByteBuffer = indexFile.selectMappedBuffer(dataIndex * GekkoIndex.INDEX_SIZE, GekkoIndex.INDEX_SIZE);
-            index = CodecUtils.decodeIndex(indexslicedByteBuffer.getByteBuffer());
+            indexslicedByteBuffer = indexFile.selectMappedBuffer((dataIndex - 1) * GekkoIndex.INDEX_SIZE, GekkoIndex.INDEX_SIZE);
+            if (null == indexslicedByteBuffer) {
+                return null;
+            }
+            if (null != indexslicedByteBuffer && indexslicedByteBuffer.getByteBuffer() != null) {
+                index = CodecUtils.decodeIndex(indexslicedByteBuffer.getByteBuffer());
+            }
         } finally {
             SlicedByteBufferUtils.safeRelease(indexslicedByteBuffer);
         }
@@ -190,7 +199,15 @@ public class FileStore extends AbstractStore {
     public List<GekkoEntry> batchGetByIndex(long fromIndex, long toIndex) {
         GekkoIndex fromGekkoIndex = getGekkoIndex(fromIndex);
         GekkoIndex toGekkoIndex = getGekkoIndex(toIndex);
-        return this.batchGet(fromGekkoIndex.getDataPos(), toGekkoIndex.getDataPos());
+        if (null == fromGekkoIndex) {
+            return new ArrayList<>();
+        }
+        if (null == toGekkoIndex) {
+            return this.batchGet(fromGekkoIndex.getDataPos(), -1);
+        } else {
+            return this.batchGet(fromGekkoIndex.getDataPos(), toGekkoIndex.getDataPos());
+        }
+
     }
 
     private long saveIndex(GekkoIndex index) {
@@ -208,13 +225,20 @@ public class FileStore extends AbstractStore {
     }
 
     public void trimAfter(long fromIndex) {
+        if (fromIndex < 1) {
+            fromIndex = 1;
+            log.info("no need to trim fromIndex=-1");
+            return;
+        }
         GekkoIndex index = getGekkoIndex(fromIndex);
-        this.dataFile.trimAfter(index.getDataPos());
-        this.indexFile.trimAfter(fromIndex * GekkoIndex.INDEX_SIZE);
+        if (null != index) {
+            this.dataFile.trimAfter(index.getDataPos());
+            this.indexFile.trimAfter(fromIndex * GekkoIndex.INDEX_SIZE);
+            this.nodeState.setWriteId(fromIndex);
+            this.nodeState.setCommitId(fromIndex);
+            this.nodeState.setLastChecksum(this.getByIndex(fromIndex).getChecksum());
+        }
 
-        this.nodeState.setWriteId(fromIndex);
-        this.nodeState.setCommitId(fromIndex);
-        this.nodeState.setLastChecksum(this.getByIndex(fromIndex).getChecksum());
     }
 
     public void trimBefore(long toIndex) {

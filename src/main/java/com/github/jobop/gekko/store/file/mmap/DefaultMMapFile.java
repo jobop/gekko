@@ -177,9 +177,9 @@ public class DefaultMMapFile extends ShutdownableReferenceCountedResource implem
     }
 
     @Override
-    public List<SlicedByteBuffer> selectMutilBufferToRead(long pos, int size) {
+    public List<SlicedByteBuffer> selectMutilBufferToRead(long pos, long size) {
         List<SlicedByteBuffer> buffers=new ArrayList<SlicedByteBuffer>();
-        buffers.add(this.selectMappedBuffer(pos,size));
+        buffers.add(this.selectMappedBuffer(pos,(int)size));
         return buffers;
     }
 

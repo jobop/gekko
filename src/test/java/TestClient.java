@@ -18,19 +18,21 @@
  * Created by CuttleFish on 2020/7/21.
  */
 
-import com.github.jobop.gekko.GekkoClient;
+import com.github.jobop.gekko.client.SmartGekkoClient;
 import com.github.jobop.gekko.core.config.GekkoClientConfig;
 
 public class TestClient {
     public static void main(String[] args) {
-        GekkoClient client = new GekkoClient(GekkoClientConfig.builder().group("group1")
-                .peer("127.0.0.1:8080")
-                .peer("127.0.0.1:9090")
-                .peer("127.0.0.1:7070")
+        SmartGekkoClient client = new SmartGekkoClient(GekkoClientConfig.builder().group("group1")
+                .peer("127.0.0.1:8081").peerId("1")
+                .peer("127.0.0.1:9091").peerId("2")
+                .peer("127.0.0.1:7071").peerId("3")
+                .connectTimeout(5000).readTimeout(5000)
                 .build());
         client.init();
         client.start();
 
+        client.append("88888888".getBytes());
 
 
     }

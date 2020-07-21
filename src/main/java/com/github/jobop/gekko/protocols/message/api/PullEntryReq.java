@@ -18,16 +18,18 @@
  */
 package com.github.jobop.gekko.protocols.message.api;
 
+import lombok.Builder;
 import lombok.Data;
 
 import java.io.Serializable;
 
 
 @Data
+@Builder
 public class PullEntryReq implements Serializable {
     /** for serialization */
     private static final long  serialVersionUID          = -1288207208017808618L;
 
-    private Integer fromIndex;
-    private Integer toIndex;
+    private long fromIndex;
+    private long toIndex;
 }

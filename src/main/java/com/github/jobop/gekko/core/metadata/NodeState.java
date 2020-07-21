@@ -47,6 +47,7 @@ public class NodeState extends LifeCycleAdpter {
     private volatile long writeId;
     private volatile long commitId;
     private volatile long lastChecksum;
+
     private volatile Map<String, Peer> peersMap = new ConcurrentHashMap<String, Peer>();
 
     public void init() {
@@ -55,24 +56,31 @@ public class NodeState extends LifeCycleAdpter {
         this.leaderId = this.config.getLeaderId();
         this.role = RoleEnum.FOLLOWER;
         this.termAtomic = new AtomicLong(-1);
-        this.writeId = -1;
-        this.commitId = -1;
+        this.writeId = 0;
+        this.commitId = 0;
         if (this.config.getPeers() == null || this.config.getPeerIds() == null) {
             throw new GekkoException(ResultEnums.PEER_OR_PEERID_CANNOT_BE_NULL);
         }
         if (this.config.getPeers().size() != this.config.getPeerIds().size()) {
             throw new GekkoException(ResultEnums.PEER_AND_PEERID_SIZE_NOT_MATCH);
         }
+
+        if (this.config.getPeerApiPorts().size() != this.config.getPeerIds().size()) {
+            throw new GekkoException(ResultEnums.PEER_AND_API_PORTS_SIZE_NOT_MATCH);
+        }
         String[] peerArray = new String[this.config.getPeers().size()];
         String[] peerIdArray = new String[this.config.getPeerIds().size()];
+        Integer[] peerApiPortArray = new Integer[this.config.getPeerApiPorts().size()];
         this.config.getPeers().toArray(peerArray);
         this.config.getPeerIds().toArray(peerIdArray);
+        this.config.getPeerApiPorts().toArray(peerApiPortArray);
 
         for (int i = 0; i < peerArray.length; i++) {
             String peer = peerArray[i];
             String host = peer.split(":")[0];
             String port = peer.split(":")[1];
-            this.peersMap.put(peerIdArray[i], Peer.builder().host(host).port(Integer.valueOf(port)).build());
+            Integer apiPort = peerApiPortArray[i];
+            this.peersMap.put(peerIdArray[i], Peer.builder().host(host).nodePort(Integer.valueOf(port)).apiPort(apiPort).build());
         }
 
     }

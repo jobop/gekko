@@ -20,23 +20,21 @@ package com.github.jobop.gekko.connector.processors;
 
 import com.alipay.remoting.AsyncContext;
 import com.alipay.remoting.BizContext;
-import com.github.jobop.gekko.core.election.GekkoLeaderElector;
-import com.github.jobop.gekko.enums.ResultEnums;
-import com.github.jobop.gekko.protocols.GekkoInboundProtocol;
-import com.github.jobop.gekko.protocols.message.api.AppendEntryReq;
-import com.github.jobop.gekko.protocols.message.api.AppendEntryResp;
+import com.github.jobop.gekko.client.SmartGekkoClient;
+import com.github.jobop.gekko.protocols.message.api.RefreshPeersReq;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * process the push req from leader
+ * process the refresh peers request from leader
  */
 @Slf4j
-public class AppendEntryProcessor extends DefaultProcessor<AppendEntryReq> {
-    GekkoLeaderElector elector;
+public class ClientRefreshPeersProcessor extends DefaultProcessor<RefreshPeersReq> {
+    SmartGekkoClient smartGekkoClient;
 
-    public AppendEntryProcessor(GekkoInboundProtocol helper, GekkoLeaderElector elector) {
-        super(helper);
-        this.elector = elector;
+    public ClientRefreshPeersProcessor(SmartGekkoClient client) {
+        super(null);
+        this.smartGekkoClient = client;
+
     }
 
     /**
@@ -44,16 +42,15 @@ public class AppendEntryProcessor extends DefaultProcessor<AppendEntryReq> {
      * @param asyncCtx
      * @param request
      */
-    public void handleRequest(BizContext bizCtx, AsyncContext asyncCtx, AppendEntryReq request) {
-        log.info("### recived a append req ");
-        helper.handleAppendEntry(request, entry -> {
-            if (entry.getPos() != -1) {
-                asyncCtx.sendResponse(AppendEntryResp.builder().index(entry.getEntryIndex()).resultCode(ResultEnums.SUCCESS).build());
-            }
-        });
+    public void handleRequest(BizContext bizCtx, AsyncContext asyncCtx, RefreshPeersReq request) {
+        if (null != request.getPeersMap()) {
+            log.info("peers changed,the newest peers size=" + request.getPeersMap().size());
+            smartGekkoClient.setPeersMap(request.getPeersMap());
+            smartGekkoClient.setLeaderPeerId(request.getLeaderId());
+        }
     }
 
     public String interest() {
-        return AppendEntryReq.class.getName();
+        return RefreshPeersReq.class.getName();
     }
 }

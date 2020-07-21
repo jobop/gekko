@@ -22,10 +22,12 @@ import com.github.jobop.gekko.utils.CrcUtil;
 import lombok.Builder;
 import lombok.Data;
 
+import java.io.Serializable;
+
 
 @Data
 @Builder
-public class GekkoEntry implements Checksum {
+public class GekkoEntry implements Checksum , Serializable {
     public static int HEADER_SIZE = 4 + 4 + 8 + 8 + 8 + 8;
     public static int BODY_OFFSET = 4 + 4 + 8 + 8 + 8 + 8;
     public static int POS_OFFSET = 4 + 4 + 8 + 8;

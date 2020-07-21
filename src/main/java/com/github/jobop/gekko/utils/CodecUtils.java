@@ -96,8 +96,11 @@ public class CodecUtils {
 
 
     public static GekkoIndex decodeIndex(ByteBuffer bb) {
-        int magic=bb.getInt();//magic
-       int totalSize= bb.getInt();
+        int magic = bb.getInt();//magic
+        if (magic != GekkoIndex.MAGIC) {
+            return null;
+        }
+        int totalSize = bb.getInt();
         long pos = bb.getLong();
         long index = bb.getLong();
         int size = bb.getInt();

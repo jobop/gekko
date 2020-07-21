@@ -37,6 +37,9 @@ public class GekkoConfig {
     Set<String> peers;
     @Singular
     Set<String> peerIds;
+    @Singular
+    Set<Integer> peerApiPorts;
+
     String selfId;
     String leaderId;
 

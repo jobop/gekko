@@ -29,11 +29,12 @@ import com.github.jobop.gekko.protocols.message.GekkoEntry;
 import com.github.jobop.gekko.protocols.message.api.*;
 import com.github.jobop.gekko.protocols.message.node.*;
 import com.github.jobop.gekko.store.Store;
+import lombok.extern.slf4j.Slf4j;
 
 import java.util.List;
 import java.util.function.Consumer;
 
-
+@Slf4j
 public class GekkoInboundMsgHelper implements GekkoInboundProtocol {
     Store store;
     StateMachine stateMachine;
@@ -41,11 +42,14 @@ public class GekkoInboundMsgHelper implements GekkoInboundProtocol {
 
     EntriesSynchronizer entriesSynchronizer;
 
-    public GekkoInboundMsgHelper(Store store, StateMachine stateMachine, NodeState nodeState, EntriesSynchronizer entriesSynchronizer) {
+    GekkoNodeNettyClient client;
+
+    public GekkoInboundMsgHelper(Store store, StateMachine stateMachine, NodeState nodeState, EntriesSynchronizer entriesSynchronizer, GekkoNodeNettyClient client) {
         this.store = store;
         this.stateMachine = stateMachine;
         this.nodeState = nodeState;
         this.entriesSynchronizer = entriesSynchronizer;
+        this.client = client;
     }
 
     /**
@@ -56,7 +60,9 @@ public class GekkoInboundMsgHelper implements GekkoInboundProtocol {
      */
     @Override
     public PullEntryResp handleGetEntries(PullEntryReq req) {
+
         List<GekkoEntry> entries = store.batchGetByIndex(req.getFromIndex(), req.getToIndex());
+        log.info("### handler pull req from follower entries size=" + entries.size());
         return PullEntryResp.builder().enries(entries).build();
     }
 
@@ -71,6 +77,7 @@ public class GekkoInboundMsgHelper implements GekkoInboundProtocol {
         GekkoEntry entry = req.getGekkoEntry();
         store.append(entry);
         if (entry.getPos() == -1) {
+            log.info("### local append success pos=" + entry.getPos());
             consumer.accept(entry);
             return;
         }
@@ -121,7 +128,9 @@ public class GekkoInboundMsgHelper implements GekkoInboundProtocol {
      */
     @Override
     public synchronized PushEntryResp handlePushDatas(PushEntryReq req) {
+
         GekkoEntry entry = req.getEntries().get(0);
+        log.info("### handler push entry pos=" + entry.getPos() + " index=" + entry.getEntryIndex());
         if (this.nodeState.getCommitId() >= entry.getEntryIndex()) {
             return PushEntryResp.builder().group(nodeState.getGroup()).acceptNodeId(nodeState.getSelfId()).index(entry.getEntryIndex()).term(nodeState.getTerm()).result(PushResultEnums.AGREE).build();
         }
@@ -137,9 +146,11 @@ public class GekkoInboundMsgHelper implements GekkoInboundProtocol {
             nodeState.setCommitId(req.getLastCommitIndex());
             this.store.append(entry);
             if (entry.getPos() != -1) {
+                log.warn("follower append success!");
                 this.nodeState.setLastChecksum(entry.getChecksum());
                 return PushEntryResp.builder().group(nodeState.getGroup()).acceptNodeId(nodeState.getSelfId()).index(entry.getEntryIndex()).term(nodeState.getTerm()).result(PushResultEnums.AGREE).build();
             } else {
+                log.warn("follower append fail!");
                 return PushEntryResp.builder().group(nodeState.getGroup()).acceptNodeId(nodeState.getSelfId()).term(nodeState.getTerm()).result(PushResultEnums.REJECT).build();
             }
 
@@ -147,9 +158,18 @@ public class GekkoInboundMsgHelper implements GekkoInboundProtocol {
             //roll back their uncommitted and batch pull from leader
             //roll back
             long fromIndex = nodeState.getCommitId();
-            long toIndex = entry.getEntryIndex();
+            long toIndex = entry.getEntryIndex() + 1;
+            if (fromIndex == 0) {
+                fromIndex = 1;
+            }
+            if (toIndex == 0) {
+                toIndex = 1;
+            }
+
             this.store.trimAfter(fromIndex);
-            List<GekkoEntry> entries = this.store.batchGetByIndex(fromIndex, toIndex);
+            //FIXME:synchronized may be hold too long
+            log.info("### try to pull from leader fromIndex=" + fromIndex + " toIndex=" + toIndex);
+            List<GekkoEntry> entries = client.pullEntriesByFollower(fromIndex, toIndex);
             for (GekkoEntry e : entries) {
                 this.store.append(e);
             }

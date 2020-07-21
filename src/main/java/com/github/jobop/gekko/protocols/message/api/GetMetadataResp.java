@@ -25,13 +25,14 @@ import lombok.Data;
 
 import java.io.Serializable;
 import java.util.List;
+import java.util.Map;
 
 
 @Data
 @Builder
 public class GetMetadataResp implements Serializable {
     private static final long  serialVersionUID          = -1288207208017808618L;
-    List<Peer> peers;
+    Map<String, Peer> peersMap;
     String leaderId;
     long term;
     ResultEnums result;

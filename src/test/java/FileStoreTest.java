@@ -31,14 +31,40 @@ import java.util.List;
 
 public class FileStoreTest extends BaseTest {
     @Test
+    public void testAppendAndBatchGet1() {
+        String dirPath = "/Users/zhengwei/Desktop/autorollfiles";
+        this.paths.add(dirPath);
+        GekkoConfig conf = GekkoConfig.builder().baseFilePath(dirPath).selfId("1").leaderId("1").storeType(StoreEnums.FILE).flushInterval(1).storeFileSize(1024 * 1024).indexCountPerFile(100000).osPageSize(1024 * 4).build();
+
+        NodeState nodeState = new NodeState(conf);
+        nodeState.init();
+        Store store = new FileStore(conf, nodeState);
+        store.init();
+        store.start();
+        String appendStr = "1sdfasdfasdfasdfasdfasdfasdfadf54545fasdfasdfasdfasdfasdfasdfadfa53345dfasdfasdfasdfasdfasdfasdfad9081nvsdfasdfasdfasdfasdfasdfadfasdfasdfasdfasdfasdfasdfasdfadfasdfasdfasdfasdfasdfasdfasdfad2";
+        byte[] bytes = appendStr.getBytes();
+        GekkoEntry entry = GekkoEntry.builder().magic(0xCAFEDADD).term(123).data(bytes).build();
+        entry.computSizeInBytes();
+        long pos_66666 = 0;
+        long pos_99999 = 0;
+        store.append(entry);
+
+        List<GekkoEntry> targetEntry = store.batchGetByIndex(1, 2);
+        Assert.assertEquals(1,targetEntry.size());
+        Assert.assertTrue(targetEntry.get(0).isIntact());
+
+
+    }
+
+    @Test
     public void testAppendAndBatchGet() {
         String dirPath = "/Users/zhengwei/Desktop/autorollfiles";
         this.paths.add(dirPath);
         GekkoConfig conf = GekkoConfig.builder().baseFilePath(dirPath).selfId("1").leaderId("1").storeType(StoreEnums.FILE).flushInterval(1).storeFileSize(1024 * 1024).indexCountPerFile(100000).osPageSize(1024 * 4).build();
 
-        NodeState nodeState=new NodeState(conf);
+        NodeState nodeState = new NodeState(conf);
         nodeState.init();
-        Store store = new FileStore(conf,nodeState);
+        Store store = new FileStore(conf, nodeState);
         store.init();
         store.start();
         String appendStr = "1sdfasdfasdfasdfasdfasdfasdfadf54545fasdfasdfasdfasdfasdfasdfadfa53345dfasdfasdfasdfasdfasdfasdfad9081nvsdfasdfasdfasdfasdfasdfadfasdfasdfasdfasdfasdfasdfasdfadfasdfasdfasdfasdfasdfasdfasdfad2";
@@ -82,13 +108,13 @@ public class FileStoreTest extends BaseTest {
 
 
         //test getByIndex
-        GekkoEntry _ent666 = store.getByIndex(66666);
+        GekkoEntry _ent666 = store.getByIndex(66666 +1);
         Assert.assertTrue(_ent666.isIntact());
         Assert.assertEquals(ent666.checksum(), _ent666.checksum());
 
 
         //test batchGetByIndex
-        List<GekkoEntry> batchGetByIndexEntries = store.batchGetByIndex(66666, 99999);
+        List<GekkoEntry> batchGetByIndexEntries = store.batchGetByIndex(66666 + 1, 99999 + 1);
         GekkoEntry lastEntry2 = batchGetByIndexEntries.get(batchGetByIndexEntries.size() - 1);
         Assert.assertEquals(pos_99999, lastEntry2.getPos() + entry.getTotalSize());
         Assert.assertEquals(99999 - 66666, batchGetByIndexEntries.size());
@@ -103,13 +129,13 @@ public class FileStoreTest extends BaseTest {
         System.out.println("end normal ");
         //Test load
 
-        NodeState state=new NodeState(conf);
+        NodeState state = new NodeState(conf);
         state.setLeaderId("1");
         state.setSelfId("1");
-        Store store2 = new FileStore(conf,state);
+        Store store2 = new FileStore(conf, state);
         store2.init();
         store2.start();
-        List<GekkoEntry> batchGetByIndexEntries2 = store2.batchGetByIndex(66666, 99999);
+        List<GekkoEntry> batchGetByIndexEntries2 = store2.batchGetByIndex(66666 + 1, 99999 + 1);
         GekkoEntry lastEntry22 = batchGetByIndexEntries2.get(batchGetByIndexEntries2.size() - 1);
         Assert.assertEquals(pos_99999, lastEntry22.getPos() + entry.getTotalSize());
         Assert.assertEquals(99999 - 66666, batchGetByIndexEntries2.size());

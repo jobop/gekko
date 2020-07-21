@@ -23,6 +23,8 @@ package com.github.jobop.gekko.connector;
 
 import com.alipay.remoting.exception.RemotingException;
 import com.alipay.remoting.rpc.RpcClient;
+import com.alipay.remoting.rpc.RpcResponseFuture;
+import com.github.jobop.gekko.core.GekkoNode;
 import com.github.jobop.gekko.core.config.GekkoConfig;
 import com.github.jobop.gekko.core.election.PreVoteCollector;
 import com.github.jobop.gekko.core.election.VoteCollector;
@@ -33,12 +35,15 @@ import com.github.jobop.gekko.core.replication.AcceptCollector;
 import com.github.jobop.gekko.enums.RoleEnum;
 import com.github.jobop.gekko.protocols.GekkoNodeConnectProtocol;
 import com.github.jobop.gekko.protocols.message.GekkoEntry;
+import com.github.jobop.gekko.protocols.message.api.PullEntryReq;
+import com.github.jobop.gekko.protocols.message.api.PullEntryResp;
 import com.github.jobop.gekko.protocols.message.node.HeartBeatReq;
 import com.github.jobop.gekko.protocols.message.node.PreVoteReq;
 import com.github.jobop.gekko.protocols.message.node.PushEntryReq;
 import com.github.jobop.gekko.protocols.message.node.VoteReq;
 import lombok.extern.slf4j.Slf4j;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -89,9 +94,9 @@ public class GekkoNodeNettyClient extends LifeCycleAdpter implements GekkoNodeCo
             }
             Peer peer = e.getValue();
             try {
-                orderNodesRpcClient.oneway(peer.getHost() + ":" + peer.getPort(), HeartBeatReq.builder().group(nodeState.getGroup()).remoteNodeId(nodeState.getSelfId()).term(nodeState.getTerm()).build());
+                orderNodesRpcClient.oneway(peer.getHost() + ":" + peer.getNodePort(), HeartBeatReq.builder().group(nodeState.getGroup()).remoteNodeId(nodeState.getSelfId()).term(nodeState.getTerm()).build());
             } catch (RemotingException remotingException) {
-                log.warn("waiting the node " + peer.getHost() + ":" + peer.getPort() + " to connect!");
+                log.warn("waiting the node " + peer.getHost() + ":" + peer.getNodePort() + " to connect!");
             } catch (InterruptedException interruptedException) {
                 interruptedException.printStackTrace();
             }
@@ -108,9 +113,9 @@ public class GekkoNodeNettyClient extends LifeCycleAdpter implements GekkoNodeCo
             }
             Peer peer = e.getValue();
             try {
-                orderNodesRpcClient.invokeWithCallback(peer.getHost() + ":" + peer.getPort(), PreVoteReq.builder().group(nodeState.getGroup()).term(preVoteCollector.getVoteTerm()).candidateId(nodeState.getSelfId()).lastIndex(nodeState.getCommitId()).build(), preVoteCollector, WAIT_FOR_VOTE_TIME_OUT);
+                orderNodesRpcClient.invokeWithCallback(peer.getHost() + ":" + peer.getNodePort(), PreVoteReq.builder().group(nodeState.getGroup()).term(preVoteCollector.getVoteTerm()).candidateId(nodeState.getSelfId()).lastIndex(nodeState.getCommitId()).build(), preVoteCollector, WAIT_FOR_VOTE_TIME_OUT);
             } catch (RemotingException remotingException) {
-                log.warn("waiting for " + peer.getHost() + ":" + peer.getPort() + " to connect!");
+                log.warn("waiting for " + peer.getHost() + ":" + peer.getNodePort() + " to connect!");
             } catch (InterruptedException interruptedException) {
                 interruptedException.printStackTrace();
             }
@@ -127,7 +132,7 @@ public class GekkoNodeNettyClient extends LifeCycleAdpter implements GekkoNodeCo
             Peer peer = e.getValue();
             try {
                 //FIXME:
-                orderNodesRpcClient.invokeWithCallback(peer.getHost() + ":" + peer.getPort(), VoteReq.builder().group(nodeState.getGroup()).term(voteCollector.getVoteTerm()).candidateId(nodeState.getSelfId()).lastIndex(nodeState.getCommitId()).build(), voteCollector, WAIT_FOR_VOTE_TIME_OUT);
+                orderNodesRpcClient.invokeWithCallback(peer.getHost() + ":" + peer.getNodePort(), VoteReq.builder().group(nodeState.getGroup()).term(voteCollector.getVoteTerm()).candidateId(nodeState.getSelfId()).lastIndex(nodeState.getCommitId()).build(), voteCollector, WAIT_FOR_VOTE_TIME_OUT);
             } catch (RemotingException remotingException) {
                 remotingException.printStackTrace();
             } catch (InterruptedException interruptedException) {
@@ -150,12 +155,27 @@ public class GekkoNodeNettyClient extends LifeCycleAdpter implements GekkoNodeCo
             Peer peer = e.getValue();
             //TODO:
             try {
-                orderNodesRpcClient.invokeWithCallback(peer.getHost() + ":" + peer.getPort(), PushEntryReq.builder().group(nodeState.getGroup()).entries(entries).remoteNodeId(nodeState.getSelfId()).term(nodeState.getTerm()).lastCommitIndex(nodeState.getCommitId()).preCheckSum(nodeState.getLastChecksum()).build(), callback, WAIT_FOR_PUSH_TIME_OUT);
+                orderNodesRpcClient.invokeWithCallback(peer.getHost() + ":" + peer.getNodePort(), PushEntryReq.builder().group(nodeState.getGroup()).entries(entries).remoteNodeId(nodeState.getSelfId()).term(nodeState.getTerm()).lastCommitIndex(nodeState.getCommitId()).preCheckSum(nodeState.getLastChecksum()).build(), callback, WAIT_FOR_PUSH_TIME_OUT);
             } catch (RemotingException remotingException) {
                 remotingException.printStackTrace();
             } catch (InterruptedException interruptedException) {
                 interruptedException.printStackTrace();
             }
         }
+    }
+
+    @Override
+    public List<GekkoEntry> pullEntriesByFollower(long fromIndex, long toIndex) {
+        Peer leaderPeer = nodeState.getPeersMap().get(nodeState.getLeaderId());
+        try {
+            RpcResponseFuture future = this.orderNodesRpcClient.invokeWithFuture(leaderPeer.getHost() + ":" + leaderPeer.getNodePort(), PullEntryReq.builder().fromIndex(fromIndex).toIndex(toIndex).build(), 5000);
+            PullEntryResp reps = (PullEntryResp) future.get();
+            return reps.getEnries();
+        } catch (RemotingException e) {
+            e.printStackTrace();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+        return new ArrayList<GekkoEntry>();
     }
 }

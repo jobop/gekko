@@ -305,8 +305,10 @@ public class AutoRollMMapFile implements ComposeMMapFile, SequenceFile, SlicedAb
         return readedSize;
     }
 
-
-    public List<SlicedByteBuffer> selectMutilBufferToRead(long fromPos, int toPos) {
+    public List<SlicedByteBuffer> selectMutilBufferToRead(long fromPos, long toPos) {
+        if(toPos==-1){
+            toPos=this.getMaxOffset();
+        }
         long size = toPos - fromPos;
         List<SlicedByteBuffer> buffers = new ArrayList<SlicedByteBuffer>();
         //calac the pos belong to which file
@@ -330,7 +332,7 @@ public class AutoRollMMapFile implements ComposeMMapFile, SequenceFile, SlicedAb
                 if (remainingToselectSize < 0) {
                     buffers.add(file.selectMappedBuffer(posInFile, (int) (fileCanSelectSize + remainingToselectSize)));
                 } else {
-                    buffers.add(file.selectMappedBuffer(posInFile, (int) remainingToselectSize));
+                    buffers.add(file.selectMappedBuffer(posInFile, (int) willSelectedSize));
                 }
                 break;
             } else {
@@ -372,7 +374,7 @@ public class AutoRollMMapFile implements ComposeMMapFile, SequenceFile, SlicedAb
     private MmapFile chooseMMapFileToRead(long pos) {
         //calac the pos belong to which file
         int fileIndex = (int) pos / this.singleFileSize;
-        if (fileIndex > this.allFiles.size()) {
+        if (fileIndex > this.allFiles.size()-1) {
             log.warn("the ops overflow ops=" + pos + " and filelist size=" + this.allFiles.size());
             return null;
         }

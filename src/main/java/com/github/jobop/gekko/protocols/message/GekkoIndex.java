@@ -27,7 +27,8 @@ import lombok.Data;
 @Builder
 public class GekkoIndex {
     public static int INDEX_SIZE = 4 + 4 + 8 + 8 + 4;
-    int magic = 0xCAFEDADE;
+    public static int MAGIC=0xCAFEDADE;
+    int magic = MAGIC;
     int totalSize = INDEX_SIZE;
     long dataPos;
     long dataIndex;

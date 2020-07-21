@@ -34,6 +34,11 @@ public class GekkoClientConfig {
     String group;
     @Singular
     Set<String> peers;
+    @Singular
+    Set<String> peerIds;
+
+    int connectTimeout = 5000;
+    int readTimeout = 5000;
 
 
 }

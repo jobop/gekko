@@ -31,7 +31,9 @@ import com.github.jobop.gekko.protocols.message.api.GetMetadataReq;
 import com.github.jobop.gekko.protocols.message.api.GetMetadataResp;
 import lombok.extern.slf4j.Slf4j;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -46,10 +48,13 @@ public class GetMetadataProcessor extends DefaultProcessor<GetMetadataReq> {
     @Override
     public void handleRequest(BizContext bizCtx, AsyncContext asyncCtx, GetMetadataReq request) {
         NodeState nodeState = elector.getState();
-        List<Peer> peers = nodeState.getPeersMap().entrySet().stream().map(e -> {
-            return e.getValue();
-        }).collect(Collectors.toList());
-        asyncCtx.sendResponse(GetMetadataResp.builder().result(ResultEnums.SUCCESS).leaderId(nodeState.getLeaderId()).peers(peers).term(nodeState.getTerm()).build());
+        List<String> peerIds = new ArrayList<>();
+        List<Peer> peers = new ArrayList<>();
+        for (Map.Entry<String, Peer> e : nodeState.getPeersMap().entrySet()) {
+            peerIds.add(e.getKey());
+            peers.add(e.getValue());
+        }
+        asyncCtx.sendResponse(GetMetadataResp.builder().result(ResultEnums.SUCCESS).leaderId(nodeState.getLeaderId()).peersMap(nodeState.getPeersMap()).term(nodeState.getTerm()).build());
 
         log.info("#### returned metadata");
     }

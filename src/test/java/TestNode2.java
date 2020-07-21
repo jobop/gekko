@@ -27,9 +27,9 @@ public class TestNode2 {
     public static void main(String[] args) {
         GekkoConfig conf = GekkoConfig.builder()
                 .group("group1")
-                .peer("127.0.0.1:8080").peerId("1")
-                .peer("127.0.0.1:9090").peerId("2")
-                .peer("127.0.0.1:7070").peerId("3")
+                .peer("127.0.0.1:8080").peerId("1").peerApiPort(8081)
+                .peer("127.0.0.1:9090").peerId("2").peerApiPort(9091)
+                .peer("127.0.0.1:7070").peerId("3").peerApiPort(7071)
                 .selfId("2")
                 .indexCountPerFile(1000000)
                 .baseFilePath("cekko2")

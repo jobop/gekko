@@ -16,24 +16,22 @@
  *
  * Created by CuttleFish on 2020/7/2.
  */
-package com.github.jobop.gekko.protocols;
+package com.github.jobop.gekko.protocols.message.api;
 
 
-import com.github.jobop.gekko.core.GekkoNode;
-import com.github.jobop.gekko.core.election.PreVoteCollector;
-import com.github.jobop.gekko.core.election.VoteCollector;
-import com.github.jobop.gekko.core.replication.AcceptCollector;
+import com.github.jobop.gekko.core.metadata.Peer;
 import com.github.jobop.gekko.protocols.message.GekkoEntry;
+import lombok.Builder;
+import lombok.Data;
 
+import java.io.Serializable;
 import java.util.List;
+import java.util.Map;
 
-public interface GekkoNodeConnectProtocol {
-    public void sendHeartBeat();
-
-    public void reqVote(VoteCollector voteCollector);
-    public void preVote(PreVoteCollector preVoteCollector);
-
-    public void pushDatas(List<GekkoEntry> entrys, AcceptCollector callback);
-
-    public List<GekkoEntry> pullEntriesByFollower(long fromIndex,long toIndex);
+@Data
+@Builder
+public class RefreshPeersReq implements Serializable {
+    Map<String, Peer> peersMap;
+    String leaderId;
+    long term;
 }
