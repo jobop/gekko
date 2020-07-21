@@ -155,7 +155,7 @@ public class GekkoNodeNettyClient extends LifeCycleAdpter implements GekkoNodeCo
             Peer peer = e.getValue();
             //TODO:
             try {
-                orderNodesRpcClient.invokeWithCallback(peer.getHost() + ":" + peer.getNodePort(), PushEntryReq.builder().group(nodeState.getGroup()).entries(entries).remoteNodeId(nodeState.getSelfId()).term(nodeState.getTerm()).lastCommitIndex(nodeState.getCommitId()).preCheckSum(nodeState.getLastChecksum()).build(), callback, WAIT_FOR_PUSH_TIME_OUT);
+                orderNodesRpcClient.invokeWithCallback(peer.getHost() + ":" + peer.getNodePort(), PushEntryReq.builder().group(nodeState.getGroup()).entries(entries).remoteNodeId(nodeState.getSelfId()).term(nodeState.getTerm()).lastCommitIndex(nodeState.getCommitId()).preCheckSum(nodeState.getPreChecksum()).build(), callback, WAIT_FOR_PUSH_TIME_OUT);
             } catch (RemotingException remotingException) {
                 remotingException.printStackTrace();
             } catch (InterruptedException interruptedException) {

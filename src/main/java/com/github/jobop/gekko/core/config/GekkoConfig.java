@@ -54,5 +54,6 @@ public class GekkoConfig {
 
     int indexCountPerFile=100000;
 
+    int saveCheckPointInterval=5;
 
 }

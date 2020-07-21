@@ -142,7 +142,8 @@ public class GekkoInboundMsgHelper implements GekkoInboundProtocol {
         }
 
         //normal
-        if (this.nodeState.getLastChecksum() == req.getPreCheckSum()) {
+        if (this.nodeState.getLastChecksum() != 0 && (this.nodeState.getLastChecksum() == req.getPreCheckSum())) {
+            log.info("checksum is match do append!");
             nodeState.setCommitId(req.getLastCommitIndex());
             this.store.append(entry);
             if (entry.getPos() != -1) {

@@ -110,6 +110,7 @@ public class FileStore extends AbstractStore {
             if (entry.getPos() != -1) {
                 if (nodeState.getWriteId() < entry.getEntryIndex()) {
                     nodeState.setWriteId(entry.getEntryIndex());
+                    nodeState.setPreChecksum(nodeState.getLastChecksum());
                     nodeState.setLastChecksum(entry.getChecksum());
                 }
             }
@@ -235,7 +236,7 @@ public class FileStore extends AbstractStore {
             this.dataFile.trimAfter(index.getDataPos());
             this.indexFile.trimAfter(fromIndex * GekkoIndex.INDEX_SIZE);
             this.nodeState.setWriteId(fromIndex);
-            this.nodeState.setCommitId(fromIndex);
+//            this.nodeState.setCommitId(fromIndex);
             this.nodeState.setLastChecksum(this.getByIndex(fromIndex).getChecksum());
         }
 

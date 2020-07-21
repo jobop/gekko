@@ -50,7 +50,7 @@ public class FileStoreTest extends BaseTest {
         store.append(entry);
 
         List<GekkoEntry> targetEntry = store.batchGetByIndex(1, 2);
-        Assert.assertEquals(1,targetEntry.size());
+        Assert.assertEquals(1, targetEntry.size());
         Assert.assertTrue(targetEntry.get(0).isIntact());
 
 
@@ -108,7 +108,7 @@ public class FileStoreTest extends BaseTest {
 
 
         //test getByIndex
-        GekkoEntry _ent666 = store.getByIndex(66666 +1);
+        GekkoEntry _ent666 = store.getByIndex(66666 + 1);
         Assert.assertTrue(_ent666.isIntact());
         Assert.assertEquals(ent666.checksum(), _ent666.checksum());
 
@@ -147,6 +147,15 @@ public class FileStoreTest extends BaseTest {
             Assert.assertEquals(e1.checksum(), e2.checksum());
         }
         System.out.println("end batch");
+
+        //test load the lastest one
+        GekkoEntry theLastestOne = store2.getByIndex(100001);
+        Assert.assertTrue(theLastestOne.isIntact());
+
+        //test load the lastest one
+        GekkoEntry theLastestOne1 = store2.getByIndex(100000);
+        Assert.assertTrue(theLastestOne1.isIntact());
+
     }
 
 }

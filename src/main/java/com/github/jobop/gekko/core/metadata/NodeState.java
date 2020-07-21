@@ -24,15 +24,29 @@ import com.github.jobop.gekko.core.exception.GekkoException;
 import com.github.jobop.gekko.core.lifecycle.LifeCycleAdpter;
 import com.github.jobop.gekko.enums.ResultEnums;
 import com.github.jobop.gekko.enums.RoleEnum;
+import com.github.jobop.gekko.utils.FileUtils;
+import com.github.jobop.gekko.utils.IOUtils;
+import com.github.jobop.gekko.utils.NotifyableThread;
 import lombok.Data;
+import lombok.extern.slf4j.Slf4j;
 
+import java.io.File;
+import java.io.IOException;
 import java.util.Map;
+import java.util.Properties;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
 
 @Data
+@Slf4j
 public class NodeState extends LifeCycleAdpter {
+    private static String LAST_CHECK_SUM_KEY = "LAST_CHECK_SUM_KEY";
+    private static String PRE_CHECK_SUM_KEY = "PRE_CHECK_SUM_KEY";
+    private static String COMMITTED_INDEX_KEY = "COMMITTED_INDEX_KEY";
+    private static String WROTTEN_INDEX_KEY = "WROTTEN_INDEX_KEY";
+
     private GekkoConfig config;
 
     public NodeState(GekkoConfig config) {
@@ -46,9 +60,12 @@ public class NodeState extends LifeCycleAdpter {
     private volatile AtomicLong termAtomic;
     private volatile long writeId;
     private volatile long commitId;
+    private volatile long preChecksum;
     private volatile long lastChecksum;
 
     private volatile Map<String, Peer> peersMap = new ConcurrentHashMap<String, Peer>();
+
+    NotifyableThread saveCheckPointThread;
 
     public void init() {
         this.group = this.config.getGroup();
@@ -83,6 +100,57 @@ public class NodeState extends LifeCycleAdpter {
             this.peersMap.put(peerIdArray[i], Peer.builder().host(host).nodePort(Integer.valueOf(port)).apiPort(apiPort).build());
         }
 
+        recoverCheckPoint();
+
+        this.saveCheckPointThread = new NotifyableThread(config.getSaveCheckPointInterval(), TimeUnit.SECONDS, "saveCheckPointThread") {
+
+            @Override
+            public void doWork() {
+                saveCheckPoint();
+            }
+        };
+
+    }
+
+    @Override
+    public void start() {
+        super.start();
+        this.saveCheckPointThread.start();
+    }
+
+    @Override
+    public void shutdown() {
+        saveCheckPointThread.shutdown();
+    }
+
+    public void saveCheckPoint() {
+        Properties properties = new Properties();
+        properties.put(LAST_CHECK_SUM_KEY, this.getLastChecksum());
+        properties.put(PRE_CHECK_SUM_KEY, this.getPreChecksum());
+        properties.put(COMMITTED_INDEX_KEY, this.getCommitId());
+        properties.put(WROTTEN_INDEX_KEY, this.getWriteId());
+        String data = IOUtils.properties2String(properties);
+        try {
+            IOUtils.string2File(data, config.getBaseFilePath() + File.separator + "nodeState.checkpoint");
+        } catch (IOException e) {
+            log.warn("saveCheckPoint fail!", e);
+        }
+
+
+    }
+
+    public void recoverCheckPoint() {
+        try {
+            String data = IOUtils.file2String(config.getBaseFilePath() + File.separator + "nodeState.checkpoint");
+            Properties properties = IOUtils.string2Properties(data);
+            this.setLastChecksum(Long.valueOf(properties.getProperty(LAST_CHECK_SUM_KEY)));
+            this.setPreChecksum(Long.valueOf(properties.getProperty(PRE_CHECK_SUM_KEY)));
+            this.setCommitId(Long.valueOf(properties.getProperty(COMMITTED_INDEX_KEY)));
+            this.setWriteId(Long.valueOf(properties.getProperty(WROTTEN_INDEX_KEY)));
+
+        } catch (Throwable t) {
+
+        }
     }
 
     public long getTerm() {

@@ -21,8 +21,11 @@
 import com.github.jobop.gekko.client.SmartGekkoClient;
 import com.github.jobop.gekko.core.config.GekkoClientConfig;
 
+import java.util.concurrent.CountDownLatch;
+
 public class TestClient {
-    public static void main(String[] args) {
+    public static void main(String[] args) throws InterruptedException {
+        CountDownLatch latch = new CountDownLatch(1);
         SmartGekkoClient client = new SmartGekkoClient(GekkoClientConfig.builder().group("group1")
                 .peer("127.0.0.1:8081").peerId("1")
                 .peer("127.0.0.1:9091").peerId("2")
@@ -32,8 +35,8 @@ public class TestClient {
         client.init();
         client.start();
 
-        client.append("88888888".getBytes());
+        client.append("999".getBytes());
 
-
+        latch.await();
     }
 }

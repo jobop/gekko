@@ -193,7 +193,6 @@ public class AutoRollMMapFile implements ComposeMMapFile, SequenceFile, SlicedAb
 
             }
 
-
             if (needRepairMetaData) {
                 repairMetaData(dataFile, metaDataFile);
             }
