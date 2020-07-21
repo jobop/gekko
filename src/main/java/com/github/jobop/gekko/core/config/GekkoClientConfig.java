@@ -14,39 +14,26 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *
- * Created by CuttleFish on 2020/7/4.
+ * Created by CuttleFish on 2020/7/3.
  */
-package com.github.jobop.gekko;
+package com.github.jobop.gekko.core.config;
+
+import com.github.jobop.gekko.core.statemachine.NoopStateMachine;
+import com.github.jobop.gekko.core.statemachine.StateMachine;
+import com.github.jobop.gekko.enums.StoreEnums;
+import lombok.Builder;
+import lombok.Data;
+import lombok.Singular;
+
+import java.util.Set;
 
 
-import com.github.jobop.gekko.core.GekkoConfig;
-import com.github.jobop.gekko.core.GekkoNode;
+@Data
+@Builder(toBuilder = true)
+public class GekkoClientConfig {
+    String group;
+    @Singular
+    Set<String> peers;
 
-import java.util.concurrent.atomic.AtomicInteger;
 
-
-public class GekkoCli {
-    AtomicInteger hashStarted = new AtomicInteger(0);
-    GekkoConfig conf;
-    GekkoNode node;
-
-    public GekkoCli(GekkoConfig conf) {
-        this.conf = conf;
-
-    }
-
-    public void start() {
-        if (hashStarted.compareAndSet(0, 1)) {
-            this.node = new GekkoNode(conf);
-            this.node.init();
-            this.node.start();
-        }
-    }
-
-    public void shutdown() {
-        if (hashStarted.compareAndSet(1, 0)) {
-            this.node.shutdown();
-        }
-
-    }
 }

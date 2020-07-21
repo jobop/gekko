@@ -77,7 +77,7 @@ public class VoteCollector implements InvokeCallback {
                         //upgrade to leader and disable this collector
                         if (available.compareAndSet(true, false)) {
 //                        this.nodeState.getTermAtomic().compareAndSet(this.voteTerm, this.voteTerm + 1);
-                            this.elector.becomeALeader();
+                            this.elector.asLeader();
 
                         }
                     }

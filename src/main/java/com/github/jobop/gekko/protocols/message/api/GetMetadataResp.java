@@ -19,6 +19,7 @@
 package com.github.jobop.gekko.protocols.message.api;
 
 import com.github.jobop.gekko.core.metadata.Peer;
+import com.github.jobop.gekko.enums.ResultEnums;
 import lombok.Builder;
 import lombok.Data;
 
@@ -29,8 +30,10 @@ import java.util.List;
 @Data
 @Builder
 public class GetMetadataResp implements Serializable {
+    private static final long  serialVersionUID          = -1288207208017808618L;
     List<Peer> peers;
     String leaderId;
     long term;
+    ResultEnums result;
 
 }

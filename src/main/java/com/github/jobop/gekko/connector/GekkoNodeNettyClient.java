@@ -21,10 +21,9 @@
 package com.github.jobop.gekko.connector;
 
 
-import com.alipay.remoting.InvokeCallback;
 import com.alipay.remoting.exception.RemotingException;
 import com.alipay.remoting.rpc.RpcClient;
-import com.github.jobop.gekko.core.GekkoConfig;
+import com.github.jobop.gekko.core.config.GekkoConfig;
 import com.github.jobop.gekko.core.election.PreVoteCollector;
 import com.github.jobop.gekko.core.election.VoteCollector;
 import com.github.jobop.gekko.core.lifecycle.LifeCycleAdpter;
@@ -42,7 +41,6 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * the client to connect to orther nodes

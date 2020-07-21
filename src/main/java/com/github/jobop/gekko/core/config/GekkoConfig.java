@@ -16,7 +16,7 @@
  *
  * Created by CuttleFish on 2020/7/3.
  */
-package com.github.jobop.gekko.core;
+package com.github.jobop.gekko.core.config;
 
 import com.github.jobop.gekko.core.statemachine.NoopStateMachine;
 import com.github.jobop.gekko.core.statemachine.StateMachine;

@@ -14,18 +14,39 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *
- * Created by CuttleFish on 2020/7/2.
+ * Created by CuttleFish on 2020/7/4.
  */
-package com.github.jobop.gekko.store;
+package com.github.jobop.gekko;
 
 
 import com.github.jobop.gekko.core.config.GekkoConfig;
-import com.github.jobop.gekko.core.metadata.NodeState;
+import com.github.jobop.gekko.core.GekkoNode;
+
+import java.util.concurrent.atomic.AtomicInteger;
 
 
-public class MemoryStore extends AbstractStore{
+public class GekkoLauncher {
+    AtomicInteger hashStarted = new AtomicInteger(0);
+    GekkoConfig conf;
+    GekkoNode node;
 
-    public MemoryStore(GekkoConfig conf, NodeState nodeState) {
-        super(conf,nodeState);
+    public GekkoLauncher(GekkoConfig conf) {
+        this.conf = conf;
+
+    }
+
+    public void start() {
+        if (hashStarted.compareAndSet(0, 1)) {
+            this.node = new GekkoNode(conf);
+            this.node.init();
+            this.node.start();
+        }
+    }
+
+    public void shutdown() {
+        if (hashStarted.compareAndSet(1, 0)) {
+            this.node.shutdown();
+        }
+
     }
 }

@@ -1,3 +1,4 @@
+
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -14,18 +15,23 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *
- * Created by CuttleFish on 2020/7/2.
+ * Created by CuttleFish on 2020/7/21.
  */
-package com.github.jobop.gekko.store;
+
+import com.github.jobop.gekko.GekkoClient;
+import com.github.jobop.gekko.core.config.GekkoClientConfig;
+
+public class TestClient {
+    public static void main(String[] args) {
+        GekkoClient client = new GekkoClient(GekkoClientConfig.builder().group("group1")
+                .peer("127.0.0.1:8080")
+                .peer("127.0.0.1:9090")
+                .peer("127.0.0.1:7070")
+                .build());
+        client.init();
+        client.start();
 
 
-import com.github.jobop.gekko.core.config.GekkoConfig;
-import com.github.jobop.gekko.core.metadata.NodeState;
 
-
-public class MemoryStore extends AbstractStore{
-
-    public MemoryStore(GekkoConfig conf, NodeState nodeState) {
-        super(conf,nodeState);
     }
 }

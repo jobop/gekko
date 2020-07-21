@@ -23,9 +23,11 @@ package com.github.jobop.gekko.core.metadata;
 import lombok.Builder;
 import lombok.Data;
 
+import java.io.Serializable;
+
 @Builder
 @Data
-public class Peer {
+public class Peer implements Serializable {
     private String host;
     private int port;
 }

@@ -20,7 +20,7 @@
 package com.github.jobop.gekko.core.election;
 
 import com.github.jobop.gekko.connector.GekkoNodeNettyClient;
-import com.github.jobop.gekko.core.GekkoConfig;
+import com.github.jobop.gekko.core.config.GekkoConfig;
 import com.github.jobop.gekko.core.lifecycle.LifeCycleAdpter;
 import com.github.jobop.gekko.core.metadata.NodeState;
 import com.github.jobop.gekko.core.timout.DelayChangeableTimeoutHolder;
@@ -160,8 +160,8 @@ public class GekkoLeaderElector extends LifeCycleAdpter {
     }
 
 
-    public void becomeAFollower(long term, String leaderId) {
-        log.info("this node becomeAFollower");
+    public void asFollower(long term, String leaderId) {
+        log.info("this node is a Follower");
         this.cancelAllVoteCollectors();
         this.state.setRole(RoleEnum.FOLLOWER);
         this.state.getTermAtomic().set(term);
@@ -170,7 +170,7 @@ public class GekkoLeaderElector extends LifeCycleAdpter {
         this.resetElectionTimeout();
     }
 
-    public void becomeALeader() {
+    public void asLeader() {
         log.info("this node becomeALeader the term is " + this.state.getTerm());
         this.stopElectionTimeout();
         this.state.setLeaderId(state.getSelfId());

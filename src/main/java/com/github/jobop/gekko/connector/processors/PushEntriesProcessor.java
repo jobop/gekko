@@ -21,9 +21,7 @@ package com.github.jobop.gekko.connector.processors;
 import com.alipay.remoting.AsyncContext;
 import com.alipay.remoting.BizContext;
 import com.github.jobop.gekko.core.election.GekkoLeaderElector;
-import com.github.jobop.gekko.enums.VoteResultEnums;
 import com.github.jobop.gekko.protocols.GekkoInboundProtocol;
-import com.github.jobop.gekko.protocols.message.node.PreVoteResp;
 import com.github.jobop.gekko.protocols.message.node.PushEntryReq;
 import com.github.jobop.gekko.protocols.message.node.PushEntryResp;
 
@@ -46,7 +44,7 @@ public class PushEntriesProcessor extends DefaultProcessor<PushEntryReq> {
             return;
         }
 
-        this.elector.becomeAFollower(request.getTerm(), request.getRemoteNodeId());
+        this.elector.asFollower(request.getTerm(), request.getRemoteNodeId());
         PushEntryResp resp = helper.handlePushDatas(request);
         asyncCtx.sendResponse(resp);
     }

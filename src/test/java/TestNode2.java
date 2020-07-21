@@ -17,8 +17,8 @@
  * Created by CuttleFish on 2020/7/3.
  */
 
-import com.github.jobop.gekko.GekkoCli;
-import com.github.jobop.gekko.core.GekkoConfig;
+import com.github.jobop.gekko.GekkoLauncher;
+import com.github.jobop.gekko.core.config.GekkoConfig;
 import com.github.jobop.gekko.core.statemachine.StateMachineAdapter;
 import com.github.jobop.gekko.enums.StoreEnums;
 import com.github.jobop.gekko.protocols.message.GekkoEntry;
@@ -45,7 +45,7 @@ public class TestNode2 {
                 }).build();
 
 
-        GekkoCli cli = new GekkoCli(conf);
-        cli.start();
+        GekkoLauncher gekkoLauncher = new GekkoLauncher(conf);
+        gekkoLauncher.start();
     }
 }

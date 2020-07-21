@@ -18,13 +18,12 @@
  * Created by CuttleFish on 2020/7/14.
  */
 
-import com.github.jobop.gekko.core.GekkoConfig;
+import com.github.jobop.gekko.core.config.GekkoConfig;
 import com.github.jobop.gekko.core.metadata.NodeState;
 import com.github.jobop.gekko.enums.StoreEnums;
 import com.github.jobop.gekko.protocols.message.GekkoEntry;
 import com.github.jobop.gekko.store.FileStore;
 import com.github.jobop.gekko.store.Store;
-import com.github.jobop.gekko.store.file.mmap.AutoRollMMapFile;
 import org.junit.Assert;
 import org.junit.Test;
 

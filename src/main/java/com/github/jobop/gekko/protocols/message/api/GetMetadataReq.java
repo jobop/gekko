@@ -19,8 +19,14 @@
 package com.github.jobop.gekko.protocols.message.api;
 
 
+import lombok.Builder;
+import lombok.Data;
+
 import java.io.Serializable;
 
-
+@Data
+@Builder
 public class GetMetadataReq implements Serializable {
+    private static final long  serialVersionUID          = -1288207208017808618L;
+    private String group;
 }

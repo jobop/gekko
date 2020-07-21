@@ -20,6 +20,7 @@ package com.github.jobop.gekko.core;
 
 
 import com.github.jobop.gekko.connector.GekkoInboundMsgHelper;
+import com.github.jobop.gekko.core.config.GekkoConfig;
 import com.github.jobop.gekko.core.election.GekkoLeaderElector;
 import com.github.jobop.gekko.connector.GekkoNettyServer;
 import com.github.jobop.gekko.connector.GekkoNodeNettyClient;

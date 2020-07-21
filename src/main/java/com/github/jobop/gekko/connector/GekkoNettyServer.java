@@ -22,7 +22,7 @@ package com.github.jobop.gekko.connector;
 
 import com.alipay.remoting.rpc.RpcServer;
 import com.github.jobop.gekko.connector.processors.*;
-import com.github.jobop.gekko.core.GekkoConfig;
+import com.github.jobop.gekko.core.config.GekkoConfig;
 import com.github.jobop.gekko.core.election.GekkoLeaderElector;
 import com.github.jobop.gekko.core.lifecycle.LifeCycleAdpter;
 import com.github.jobop.gekko.core.metadata.NodeState;
@@ -56,6 +56,7 @@ public class GekkoNettyServer extends LifeCycleAdpter {
         rpcServer.registerUserProcessor(new PreReqVoteProcessor(inboundHelper, elector));
         rpcServer.registerUserProcessor(new ReqVoteProcessor(inboundHelper, elector));
         rpcServer.registerUserProcessor(new AppendEntryProcessor(inboundHelper, elector));
+        rpcServer.registerUserProcessor(new GetMetadataProcessor(inboundHelper, elector));
 
 
 

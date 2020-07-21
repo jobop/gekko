@@ -25,13 +25,16 @@ import com.alipay.remoting.BizContext;
 import com.github.jobop.gekko.core.election.GekkoLeaderElector;
 import com.github.jobop.gekko.core.metadata.NodeState;
 import com.github.jobop.gekko.core.metadata.Peer;
+import com.github.jobop.gekko.enums.ResultEnums;
 import com.github.jobop.gekko.protocols.GekkoInboundProtocol;
 import com.github.jobop.gekko.protocols.message.api.GetMetadataReq;
 import com.github.jobop.gekko.protocols.message.api.GetMetadataResp;
+import lombok.extern.slf4j.Slf4j;
 
 import java.util.List;
 import java.util.stream.Collectors;
 
+@Slf4j
 public class GetMetadataProcessor extends DefaultProcessor<GetMetadataReq> {
     GekkoLeaderElector elector;
 
@@ -46,7 +49,9 @@ public class GetMetadataProcessor extends DefaultProcessor<GetMetadataReq> {
         List<Peer> peers = nodeState.getPeersMap().entrySet().stream().map(e -> {
             return e.getValue();
         }).collect(Collectors.toList());
-        asyncCtx.sendResponse(GetMetadataResp.builder().leaderId(nodeState.getLeaderId()).peers(peers).term(nodeState.getTerm()).build());
+        asyncCtx.sendResponse(GetMetadataResp.builder().result(ResultEnums.SUCCESS).leaderId(nodeState.getLeaderId()).peers(peers).term(nodeState.getTerm()).build());
+
+        log.info("#### returned metadata");
     }
 
     @Override

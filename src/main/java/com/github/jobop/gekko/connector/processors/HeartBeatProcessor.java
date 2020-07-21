@@ -38,7 +38,7 @@ public class HeartBeatProcessor extends DefaultProcessor<HeartBeatReq> {
     }
 
     public void handleRequest(BizContext bizCtx, AsyncContext asyncCtx, HeartBeatReq request) {
-        log.info("received a heartbeat from leader remote term=" + request.getTerm() + " leader =" + request.getRemoteNodeId() + " local term=" + elector.getState().getTerm() + " remote term=" + request.getTerm());
+        log.info("received a heartbeat from leader " + request.getRemoteNodeId() + " local term=" + elector.getState().getTerm() + " remote term=" + request.getTerm() + " group=" + request.getGroup());
 
         if (!elector.getState().getGroup().equals(request.getGroup())) {
             return;
@@ -47,7 +47,7 @@ public class HeartBeatProcessor extends DefaultProcessor<HeartBeatReq> {
             return;
         }
 
-        this.elector.becomeAFollower(request.getTerm(), request.getRemoteNodeId());
+        this.elector.asFollower(request.getTerm(), request.getRemoteNodeId());
     }
 
     public String interest() {

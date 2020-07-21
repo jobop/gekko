@@ -19,7 +19,7 @@
 package com.github.jobop.gekko.store;
 
 
-import com.github.jobop.gekko.core.GekkoConfig;
+import com.github.jobop.gekko.core.config.GekkoConfig;
 import com.github.jobop.gekko.core.metadata.NodeState;
 
 
