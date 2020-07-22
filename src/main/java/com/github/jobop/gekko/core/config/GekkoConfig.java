@@ -52,8 +52,12 @@ public class GekkoConfig {
 
     int flushInterval = 1;
 
-    int indexCountPerFile=100000;
+    int indexCountPerFile = 100000;
 
-    int saveCheckPointInterval=5;
+    int saveCheckPointInterval = 5;
+
+    int maxElectionTimeOut = 5000;
+    int minElectionTimeOut = 2000;
+    int heartBeatInterval = 1000;
 
 }

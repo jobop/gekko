@@ -96,7 +96,7 @@ public class FileStore extends AbstractStore {
 
     @Override
     public void append(GekkoEntry entry) {
-        synchronized (this) {
+        synchronized (nodeState) {
             long pos = dataFile.allocPos(entry.getTotalSize());
             if (nodeState.getSelfId() == nodeState.getLeaderId()) {
                 fillEntry(entry, pos);

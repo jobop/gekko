@@ -23,9 +23,16 @@ package com.github.jobop.gekko.utils;
 import com.github.jobop.gekko.core.metadata.NodeState;
 import com.github.jobop.gekko.enums.VoteResultEnums;
 import com.github.jobop.gekko.protocols.message.node.VoteResp;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 public class ElectionUtils {
-    public static boolean judgVote(long nowTerm, long voteTerm, long nowLastIndex, long remoteLastIndex) {
+    public static boolean judgVote(long nowTerm, long voteTerm, long nowLastIndex, long remoteLastIndex, long minElectionTimeOut, long lastBeFollowerTime) {
+
+        if (System.currentTimeMillis() - lastBeFollowerTime < minElectionTimeOut) {
+            log.warn("the leader lease is validate");
+            return false;
+        }
         if (nowTerm < voteTerm) {
             if (remoteLastIndex >= nowLastIndex) {
                 return true;

@@ -45,6 +45,7 @@ public class PushEntriesProcessor extends DefaultProcessor<PushEntryReq> {
         }
 
         this.elector.asFollower(request.getTerm(), request.getRemoteNodeId());
+        this.elector.getState().setLastCommunityToLeaderTime(System.currentTimeMillis());
         PushEntryResp resp = helper.handlePushDatas(request);
         asyncCtx.sendResponse(resp);
     }

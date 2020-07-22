@@ -26,8 +26,6 @@ import com.github.jobop.gekko.enums.VoteResultEnums;
 import com.github.jobop.gekko.protocols.GekkoInboundProtocol;
 import com.github.jobop.gekko.protocols.message.node.PreVoteReq;
 import com.github.jobop.gekko.protocols.message.node.PreVoteResp;
-import com.github.jobop.gekko.protocols.message.node.VoteReq;
-import com.github.jobop.gekko.protocols.message.node.VoteResp;
 import com.github.jobop.gekko.utils.ElectionUtils;
 import lombok.extern.slf4j.Slf4j;
 
@@ -57,7 +55,7 @@ public class PreReqVoteProcessor extends DefaultProcessor<PreVoteReq> {
             return;
         }
 
-        if (ElectionUtils.judgVote(nowTerm, voteTerm, nowLastIndex, remoteLastIndex)) {
+        if (ElectionUtils.judgVote(nowTerm, voteTerm, nowLastIndex, remoteLastIndex, nodeState.getConfig().getMinElectionTimeOut(), nodeState.getLastCommunityToLeaderTime())) {
             log.info("term " + voteTerm + " prevoted to " + request.getCandidateId() + " agree");
             asyncCtx.sendResponse(PreVoteResp.builder().group(nodeState.getGroup()).term(voteTerm).voteMemberId(nodeState.getSelfId()).result(VoteResultEnums.AGREE).build());
         } else {

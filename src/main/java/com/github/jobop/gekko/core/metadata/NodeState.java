@@ -62,6 +62,8 @@ public class NodeState extends LifeCycleAdpter {
     private volatile long commitId;
     private volatile long preChecksum;
     private volatile long lastChecksum;
+    //avoid the inode thich cannot connect to the leader send a vote or prevote to it,make it cannot handle the append push from the leader
+    private volatile long lastCommunityToLeaderTime;
 
     private volatile Map<String, Peer> peersMap = new ConcurrentHashMap<String, Peer>();
 

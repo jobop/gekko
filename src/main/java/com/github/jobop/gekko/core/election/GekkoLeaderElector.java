@@ -51,25 +51,8 @@ public class GekkoLeaderElector extends LifeCycleAdpter {
     RefreshableTimeoutHolder heartBeatSender;
 
 
-    static int MAX_ELECTION_TIMEOUT = 5000;
-    static int MIN_ELECTION_TIMEOUT = 2000;
-
-    static int HEART_BEAT_INTERVAL = 1000;
-
     Random random = new Random();
 
-    public static void main(String[] args) {
-        Random random = new Random(MIN_ELECTION_TIMEOUT);
-        int delay = random.nextInt(MAX_ELECTION_TIMEOUT - MIN_ELECTION_TIMEOUT + 1) + MIN_ELECTION_TIMEOUT;
-        while (true) {
-            if (delay < MIN_ELECTION_TIMEOUT || delay > MAX_ELECTION_TIMEOUT) {
-                System.out.println(delay);
-            }
-
-            delay = random.nextInt(MAX_ELECTION_TIMEOUT - MIN_ELECTION_TIMEOUT + 1) + MIN_ELECTION_TIMEOUT;
-        }
-
-    }
 
     public GekkoLeaderElector(GekkoConfig conf, GekkoNodeNettyClient client, NodeState state) {
         this.conf = conf;
@@ -81,7 +64,7 @@ public class GekkoLeaderElector extends LifeCycleAdpter {
     @Override
     public void init() {
         GekkoLeaderElector thisElector = this;
-        int delay = random.nextInt(MAX_ELECTION_TIMEOUT - MIN_ELECTION_TIMEOUT + 1) + MIN_ELECTION_TIMEOUT;
+        int delay = random.nextInt(conf.getMaxElectionTimeOut() - conf.getMinElectionTimeOut() + 1) + conf.getMinElectionTimeOut();
         electionTimeoutChecker = new DelayChangeableTimeoutHolder(new TimerTask() {
             @Override
             public void run(Timeout timeout) throws Exception {
@@ -104,7 +87,7 @@ public class GekkoLeaderElector extends LifeCycleAdpter {
                 //wait for the next heartbeat trigger
                 thisElector.refreshSendHeartBeatToFollower();
             }
-        }, HEART_BEAT_INTERVAL, TimeUnit.MILLISECONDS);
+        }, conf.getHeartBeatInterval(), TimeUnit.MILLISECONDS);
     }
 
 
@@ -155,13 +138,14 @@ public class GekkoLeaderElector extends LifeCycleAdpter {
     }
 
     public void resetElectionTimeout() {
-        int delay = random.nextInt(MAX_ELECTION_TIMEOUT - MIN_ELECTION_TIMEOUT + 1) + MIN_ELECTION_TIMEOUT;
+        int delay = random.nextInt(conf.getMaxElectionTimeOut() - conf.getMinElectionTimeOut() + 1) + conf.getMinElectionTimeOut();
         electionTimeoutChecker.refresh(delay, TimeUnit.MILLISECONDS);
     }
 
 
     public void asFollower(long term, String leaderId) {
-        log.info("this node is a Follower");
+
+        log.info("this node become a Follower");
         this.cancelAllVoteCollectors();
         this.state.setRole(RoleEnum.FOLLOWER);
         this.state.getTermAtomic().set(term);

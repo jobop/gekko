@@ -43,7 +43,7 @@ public class TestNode3 {
                     public void onAppend(GekkoEntry entry) {
                         super.onAppend(entry);
                     }
-                }).build();
+                }).maxElectionTimeOut(5000).minElectionTimeOut(2000).heartBeatInterval(1000).build();
 
 
         GekkoLauncher gekkoLauncher = new GekkoLauncher(conf);

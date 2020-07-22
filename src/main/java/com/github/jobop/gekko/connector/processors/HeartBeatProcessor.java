@@ -48,6 +48,7 @@ public class HeartBeatProcessor extends DefaultProcessor<HeartBeatReq> {
         }
 
         this.elector.asFollower(request.getTerm(), request.getRemoteNodeId());
+        this.elector.getState().setLastCommunityToLeaderTime(System.currentTimeMillis());
     }
 
     public String interest() {

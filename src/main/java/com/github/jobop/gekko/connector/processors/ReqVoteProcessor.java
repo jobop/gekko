@@ -22,10 +22,8 @@ import com.alipay.remoting.AsyncContext;
 import com.alipay.remoting.BizContext;
 import com.github.jobop.gekko.core.election.GekkoLeaderElector;
 import com.github.jobop.gekko.core.metadata.NodeState;
-import com.github.jobop.gekko.enums.RoleEnum;
 import com.github.jobop.gekko.enums.VoteResultEnums;
 import com.github.jobop.gekko.protocols.GekkoInboundProtocol;
-import com.github.jobop.gekko.protocols.message.node.PreVoteResp;
 import com.github.jobop.gekko.protocols.message.node.VoteReq;
 import com.github.jobop.gekko.protocols.message.node.VoteResp;
 import com.github.jobop.gekko.utils.ElectionUtils;
@@ -55,9 +53,10 @@ public class ReqVoteProcessor extends DefaultProcessor<VoteReq> {
             asyncCtx.sendResponse(VoteResp.builder().group(elector.getState().getGroup()).term(voteTerm).voteMemberId(elector.getState().getSelfId()).result(VoteResultEnums.REJECT).build());
             return;
         }
-        if (ElectionUtils.judgVote(nowTerm, voteTerm, nowLastIndex, remoteLastIndex)) {
+        if (ElectionUtils.judgVote(nowTerm, voteTerm, nowLastIndex, remoteLastIndex, nodeState.getConfig().getMinElectionTimeOut(), nodeState.getLastCommunityToLeaderTime())) {
             if (nodeState.getTermAtomic().compareAndSet(nowTerm, voteTerm)) {
-                log.info("term " + voteTerm + " voted to " + request.getCandidateId());
+                log.info("term " + voteTerm + " voted to " + request.getCandidateId() + " give up self term");
+                this.elector.asFollower(request.getTerm(), request.getCandidateId());
                 asyncCtx.sendResponse(VoteResp.builder().group(nodeState.getGroup()).term(voteTerm).voteMemberId(nodeState.getSelfId()).result(VoteResultEnums.AGREE).build());
             } else {
                 asyncCtx.sendResponse(VoteResp.builder().group(nodeState.getGroup()).term(voteTerm).voteMemberId(nodeState.getSelfId()).result(VoteResultEnums.REJECT).build());
