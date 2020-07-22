@@ -15,21 +15,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *
- * Created by CuttleFish on 2020/7/16.
+ * Created by CuttleFish on 2020/7/22.
  */
 
-package com.github.jobop.gekko.core.metadata;
+package com.github.jobop.gekko.core.replication;
 
-import lombok.Builder;
-import lombok.Data;
-
-import java.io.Serializable;
-
-@Builder
-@Data
-public class Peer implements Serializable {
-    private String host;
-    private int nodePort;
-    private int apiPort;
-
+public class EntryBatch {
 }

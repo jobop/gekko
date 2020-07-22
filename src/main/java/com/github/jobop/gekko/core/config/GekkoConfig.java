@@ -24,6 +24,7 @@ import com.github.jobop.gekko.enums.StoreEnums;
 import lombok.Builder;
 import lombok.Data;
 import lombok.Singular;
+import lombok.experimental.FieldDefaults;
 
 import java.util.Set;
 
@@ -42,22 +43,25 @@ public class GekkoConfig {
 
     String selfId;
     String leaderId;
-
+    @Builder.Default
     StateMachine stateMachine = new NoopStateMachine();
 
     String baseFilePath;
-
+    @Builder.Default
     int storeFileSize = 1024 * 1024 * 40;
+    @Builder.Default
     int osPageSize = 1024 * 4;
-
+    @Builder.Default
     int flushInterval = 1;
-
+    @Builder.Default
     int indexCountPerFile = 100000;
-
+    @Builder.Default
     int saveCheckPointInterval = 5;
-
+    @Builder.Default
     int maxElectionTimeOut = 5000;
+    @Builder.Default
     int minElectionTimeOut = 2000;
+    @Builder.Default
     int heartBeatInterval = 1000;
 
 }

@@ -82,7 +82,7 @@ public class GekkoInboundMsgHelper implements GekkoInboundProtocol {
             return;
         }
 
-        entriesSynchronizer.append(entry, consumer);
+        entriesSynchronizer.push(entry);
     }
 
     /**
