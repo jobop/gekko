@@ -83,7 +83,7 @@ public abstract class NotifyableThread extends Thread {
 
     }
 
-    private void waiting() {
+    public void waiting() {
         if (hasNotified.compareAndSet(true, false)) {
             return;
         }

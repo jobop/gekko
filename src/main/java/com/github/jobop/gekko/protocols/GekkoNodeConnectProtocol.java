@@ -19,10 +19,13 @@
 package com.github.jobop.gekko.protocols;
 
 
+import com.alipay.remoting.InvokeCallback;
 import com.github.jobop.gekko.core.GekkoNode;
 import com.github.jobop.gekko.core.election.PreVoteCollector;
 import com.github.jobop.gekko.core.election.VoteCollector;
+import com.github.jobop.gekko.core.metadata.Peer;
 import com.github.jobop.gekko.core.replication.AcceptCollector;
+import com.github.jobop.gekko.core.replication.PenddingEntryBatch;
 import com.github.jobop.gekko.protocols.message.GekkoEntry;
 
 import java.util.List;
@@ -30,10 +33,14 @@ import java.util.List;
 public interface GekkoNodeConnectProtocol {
     public void sendHeartBeat();
 
+    public void sendProbe(Peer peer, InvokeCallback callback);
+
     public void reqVote(VoteCollector voteCollector);
+
     public void preVote(PreVoteCollector preVoteCollector);
 
     public void pushDatas(List<GekkoEntry> entrys, AcceptCollector callback);
+    public void pushDatas(Peer peer, PenddingEntryBatch penddingEntry, InvokeCallback callback);
 
-    public List<GekkoEntry> pullEntriesByFollower(long fromIndex,long toIndex);
+    public List<GekkoEntry> pullEntriesByFollower(long fromIndex, long toIndex);
 }

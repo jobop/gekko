@@ -23,6 +23,7 @@ import com.github.jobop.gekko.connector.GekkoNodeNettyClient;
 import com.github.jobop.gekko.core.config.GekkoConfig;
 import com.github.jobop.gekko.core.lifecycle.LifeCycleAdpter;
 import com.github.jobop.gekko.core.metadata.NodeState;
+import com.github.jobop.gekko.core.replication.EntriesSynchronizer;
 import com.github.jobop.gekko.core.timout.DelayChangeableTimeoutHolder;
 import com.github.jobop.gekko.core.timout.RefreshableTimeoutHolder;
 import com.github.jobop.gekko.enums.RoleEnum;
@@ -49,15 +50,16 @@ public class GekkoLeaderElector extends LifeCycleAdpter {
     DelayChangeableTimeoutHolder electionTimeoutChecker;
 
     RefreshableTimeoutHolder heartBeatSender;
-
+    EntriesSynchronizer synchronizer;
 
     Random random = new Random();
 
 
-    public GekkoLeaderElector(GekkoConfig conf, GekkoNodeNettyClient client, NodeState state) {
+    public GekkoLeaderElector(GekkoConfig conf, GekkoNodeNettyClient client, NodeState state, EntriesSynchronizer synchronizer) {
         this.conf = conf;
         this.client = client;
         this.state = state;
+        this.synchronizer = synchronizer;
 
     }
 
@@ -71,9 +73,9 @@ public class GekkoLeaderElector extends LifeCycleAdpter {
 
                 log.info("start election to prevote timeout=" + timeout);
                 state.setRole(RoleEnum.PRE_CANDIDATE);
-                PreVoteCollector prevoteCollector = new PreVoteCollector(state, thisElector);
-                preVoteCollectors.add(new WeakReference<>(prevoteCollector));
-                client.preVote(prevoteCollector);
+//                PreVoteCollector prevoteCollector = new PreVoteCollector(state, thisElector);
+//                preVoteCollectors.add(new WeakReference<>(prevoteCollector));
+                client.preVote(new PreVoteCollector(state, thisElector));
                 //when no outer trigger the reset,it will reset by itself
                 thisElector.resetElectionTimeout();
             }
@@ -147,6 +149,8 @@ public class GekkoLeaderElector extends LifeCycleAdpter {
 
         log.info("this node become a Follower");
         this.cancelAllVoteCollectors();
+        this.synchronizer.stopProbes();
+
         this.state.setRole(RoleEnum.FOLLOWER);
         this.state.getTermAtomic().set(term);
         this.state.setLeaderId(leaderId);
@@ -157,9 +161,11 @@ public class GekkoLeaderElector extends LifeCycleAdpter {
     public void asLeader() {
         log.info("this node becomeALeader the term is " + this.state.getTerm());
         this.stopElectionTimeout();
+        this.synchronizer.triggerProbes();
         this.state.setLeaderId(state.getSelfId());
         this.state.setRole(RoleEnum.LEADER);
         this.cancelAllVoteCollectors();
         this.refreshSendHeartBeatToFollower();
+
     }
 }

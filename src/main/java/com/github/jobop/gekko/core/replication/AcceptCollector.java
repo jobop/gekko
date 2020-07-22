@@ -27,6 +27,7 @@ import com.github.jobop.gekko.enums.VoteResultEnums;
 import com.github.jobop.gekko.protocols.message.GekkoEntry;
 import com.github.jobop.gekko.protocols.message.node.PushEntryResp;
 import com.github.jobop.gekko.protocols.message.node.VoteResp;
+import com.github.jobop.gekko.utils.Utils;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.Collections;
@@ -39,7 +40,6 @@ import java.util.function.Consumer;
 
 @Slf4j
 public class AcceptCollector implements InvokeCallback {
-    static Executor executor = Executors.newCachedThreadPool();
     NodeState nodeState;
     private Consumer callback;
     private Set<String> agreeSet = Collections.synchronizedSet(new HashSet<>());
@@ -76,6 +76,6 @@ public class AcceptCollector implements InvokeCallback {
 
     @Override
     public Executor getExecutor() {
-        return executor;
+        return Utils.GOABL_DEFAULT_THREAD_POOL;
     }
 }

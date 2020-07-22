@@ -18,32 +18,21 @@
  */
 package com.github.jobop.gekko.protocols.message.node;
 
-import com.github.jobop.gekko.protocols.message.GekkoEntry;
 import lombok.Builder;
 import lombok.Data;
-import lombok.Singular;
 
 import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.List;
 
 
 @Data
 @Builder
-public class PushEntryReq implements Serializable {
+public class ProbeReq implements Serializable {
     /**
      * for serialization
      */
+
     private static final long serialVersionUID = -1288207208017808618L;
     private String group;
     private String remoteNodeId;
-    private long lastCommitIndex;
     private long term;
-    private long preCheckSum;
-
-    private long startIndex;
-    private long endIndex;
-    private long count;
-    @Singular
-    List<GekkoEntry> entries = new ArrayList<>();
 }

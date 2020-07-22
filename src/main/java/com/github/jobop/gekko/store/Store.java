@@ -21,6 +21,7 @@ package com.github.jobop.gekko.store;
 
 import com.github.jobop.gekko.core.lifecycle.LifeCycle;
 import com.github.jobop.gekko.protocols.message.GekkoEntry;
+import com.github.jobop.gekko.protocols.message.GekkoIndex;
 
 import java.util.List;
 
@@ -36,6 +37,8 @@ public interface Store extends LifeCycle {
 
     public List<GekkoEntry> batchGetByIndex(long fromIndex, long toIndex);
 
+
+    public long getMaxIndex();
     public void trimAfter(long fromIndex);
     public void trimBefore(long toIndex);
 

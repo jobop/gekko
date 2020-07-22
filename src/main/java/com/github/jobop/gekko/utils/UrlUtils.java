@@ -18,7 +18,16 @@
  * Created by CuttleFish on 2020/7/22.
  */
 
-package com.github.jobop.gekko.core.replication;
+package com.github.jobop.gekko.utils;
 
-public class EntryBatch {
+import com.alipay.remoting.Url;
+import com.github.jobop.gekko.core.metadata.Peer;
+
+public class UrlUtils {
+    public static Url parseUrl(Peer peer) {
+        final String url = peer.getHost() + ":" + peer.getNodePort();
+        final String uniqueKey = url + ":cekko";
+        return new Url(url, peer.getHost(), peer.getNodePort(), uniqueKey, null);
+
+    }
 }

@@ -22,6 +22,7 @@ import com.github.jobop.gekko.core.config.GekkoConfig;
 import com.github.jobop.gekko.core.lifecycle.LifeCycleAdpter;
 import com.github.jobop.gekko.core.metadata.NodeState;
 import com.github.jobop.gekko.protocols.message.GekkoEntry;
+import com.github.jobop.gekko.protocols.message.GekkoIndex;
 
 import java.util.List;
 
@@ -71,6 +72,11 @@ public  class AbstractStore extends LifeCycleAdpter implements com.github.jobop.
     @Override
     public List<GekkoEntry> batchGetByIndex(long fromIndex, long toIndex) {
         return null;
+    }
+
+    @Override
+    public long getMaxIndex() {
+        return -1;
     }
 
     @Override

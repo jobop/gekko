@@ -26,6 +26,7 @@ import com.github.jobop.gekko.enums.RoleEnum;
 import com.github.jobop.gekko.enums.VoteResultEnums;
 import com.github.jobop.gekko.protocols.message.node.PreVoteResp;
 import com.github.jobop.gekko.protocols.message.node.VoteResp;
+import com.github.jobop.gekko.utils.Utils;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 
@@ -40,7 +41,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 @Slf4j
 @Data
 public class PreVoteCollector implements InvokeCallback {
-    static Executor executor = Executors.newCachedThreadPool();
     NodeState nodeState;
     private long voteTerm;
 
@@ -88,9 +88,9 @@ public class PreVoteCollector implements InvokeCallback {
 
     private void reqToRealVote() {
         nodeState.setRole(RoleEnum.CANDIDATE);
-        VoteCollector voteCollector = new VoteCollector(nodeState, elector);
-        elector.getVoteCollectors().add(new WeakReference<>(voteCollector));
-        elector.getClient().reqVote(voteCollector);
+//        VoteCollector voteCollector = new VoteCollector(nodeState, elector);
+//        elector.getVoteCollectors().add(new WeakReference<>(voteCollector));
+        elector.getClient().reqVote(new VoteCollector(nodeState, elector));
         //when no outer trigger the reset,it will reset by itself
         elector.resetElectionTimeout();
     }
@@ -102,7 +102,7 @@ public class PreVoteCollector implements InvokeCallback {
 
     @Override
     public Executor getExecutor() {
-        return executor;
+        return Utils.GOABL_DEFAULT_THREAD_POOL;
     }
 
     public void disAble() {

@@ -23,6 +23,7 @@ package com.github.jobop.gekko.connector;
 import com.alipay.remoting.Connection;
 import com.alipay.remoting.config.switches.GlobalSwitch;
 import com.alipay.remoting.exception.RemotingException;
+import com.alipay.remoting.rpc.RpcConfigs;
 import com.alipay.remoting.rpc.RpcServer;
 import com.github.jobop.gekko.connector.processors.*;
 import com.github.jobop.gekko.core.config.GekkoConfig;
@@ -60,6 +61,8 @@ public class GekkoNettyServer extends LifeCycleAdpter {
     }
 
     public void init() {
+        System.setProperty(RpcConfigs.DISPATCH_MSG_LIST_IN_DEFAULT_EXECUTOR, "false");
+
         Peer selfPeer = this.nodeState.getPeersMap().get(conf.getSelfId());
         nodeRpcServer = new RpcServer(selfPeer.getNodePort());
         apiRpcServer = new RpcServer(selfPeer.getApiPort());
@@ -72,6 +75,7 @@ public class GekkoNettyServer extends LifeCycleAdpter {
         nodeRpcServer.registerUserProcessor(new PreReqVoteProcessor(inboundHelper, elector));
         nodeRpcServer.registerUserProcessor(new ReqVoteProcessor(inboundHelper, elector));
         nodeRpcServer.registerUserProcessor(new GetMetadataProcessor(inboundHelper, elector));
+        nodeRpcServer.switches().turnOn(GlobalSwitch.SERVER_MANAGE_CONNECTION_SWITCH);
 
         //api
         apiRpcServer.registerUserProcessor(new PullEntryProcessor(inboundHelper));

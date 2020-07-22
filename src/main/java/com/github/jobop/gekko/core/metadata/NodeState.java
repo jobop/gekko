@@ -159,5 +159,11 @@ public class NodeState extends LifeCycleAdpter {
         return termAtomic.get();
     }
 
+    public boolean isLeader(){
+        return this.role==RoleEnum.LEADER;
+    }
+    public boolean isFollower(){
+        return this.role==RoleEnum.FOLLOWER;
+    }
 
 }

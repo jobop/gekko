@@ -48,6 +48,8 @@ public class FileStore extends AbstractStore {
 
     private NotifyableThread fileFlushThread;
 
+    volatile long maxIndex = 0;
+
 
     private ThreadLocal<ByteBuffer> localDataBuffer = ThreadLocal.withInitial(() -> {
         return ByteBuffer.allocate(1024 * 1024);
@@ -73,6 +75,7 @@ public class FileStore extends AbstractStore {
         indexFile = new AutoRollMMapFile(BASE_FILE_PATH + File.separator + "index", GekkoIndex.INDEX_SIZE * conf.getIndexCountPerFile(), conf.getOsPageSize());
         dataFile.load();
         indexFile.load();
+        this.maxIndex = indexFile.getMaxOffset() == 0 ? 0 : (indexFile.getMaxOffset() / GekkoIndex.INDEX_SIZE) + 1;
 
         this.fileFlushThread = new NotifyableThread(this.conf.getFlushInterval(), TimeUnit.SECONDS, "flush-thread") {
             @Override
@@ -112,6 +115,7 @@ public class FileStore extends AbstractStore {
                     nodeState.setWriteId(entry.getEntryIndex());
                     nodeState.setPreChecksum(nodeState.getLastChecksum());
                     nodeState.setLastChecksum(entry.getChecksum());
+                    maxIndex++;
                 }
             }
         }
@@ -243,5 +247,9 @@ public class FileStore extends AbstractStore {
     }
 
     public void trimBefore(long toIndex) {
+    }
+    @Override
+    public long getMaxIndex() {
+        return this.maxIndex;
     }
 }

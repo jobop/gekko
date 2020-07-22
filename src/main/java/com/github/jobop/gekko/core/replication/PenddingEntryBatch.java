@@ -1,3 +1,4 @@
+
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -14,36 +15,27 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *
- * Created by CuttleFish on 2020/7/2.
+ * Created by CuttleFish on 2020/7/22.
  */
-package com.github.jobop.gekko.protocols.message.node;
+
+package com.github.jobop.gekko.core.replication;
 
 import com.github.jobop.gekko.protocols.message.GekkoEntry;
 import lombok.Builder;
 import lombok.Data;
 import lombok.Singular;
 
-import java.io.Serializable;
-import java.util.ArrayList;
 import java.util.List;
-
 
 @Data
 @Builder
-public class PushEntryReq implements Serializable {
-    /**
-     * for serialization
-     */
-    private static final long serialVersionUID = -1288207208017808618L;
-    private String group;
-    private String remoteNodeId;
-    private long lastCommitIndex;
-    private long term;
-    private long preCheckSum;
-
+public class PenddingEntryBatch {
+    long preCommitIndex;
+    long preCheckSum;
+    long batchId;
     private long startIndex;
     private long endIndex;
     private long count;
     @Singular
-    List<GekkoEntry> entries = new ArrayList<>();
+    List<GekkoEntry> entries;
 }

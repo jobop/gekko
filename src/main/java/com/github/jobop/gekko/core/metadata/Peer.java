@@ -32,4 +32,10 @@ public class Peer implements Serializable {
     private int nodePort;
     private int apiPort;
 
+    public String getNodeUrl() {
+        return host + ":" + nodePort;
+    }
+    public String getApiUrl() {
+        return host + ":" + apiPort;
+    }
 }

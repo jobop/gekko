@@ -24,6 +24,7 @@ import com.alipay.remoting.InvokeCallback;
 import com.github.jobop.gekko.core.metadata.NodeState;
 import com.github.jobop.gekko.enums.VoteResultEnums;
 import com.github.jobop.gekko.protocols.message.node.VoteResp;
+import com.github.jobop.gekko.utils.Utils;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 
@@ -37,7 +38,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 @Slf4j
 @Data
 public class VoteCollector implements InvokeCallback {
-    static Executor executor = Executors.newCachedThreadPool();
     NodeState nodeState;
     private long voteTerm;
 
@@ -93,7 +93,7 @@ public class VoteCollector implements InvokeCallback {
 
     @Override
     public Executor getExecutor() {
-        return executor;
+        return Utils.GOABL_DEFAULT_THREAD_POOL;
     }
 
     public void disAble() {

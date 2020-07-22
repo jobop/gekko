@@ -64,4 +64,11 @@ public class GekkoConfig {
     @Builder.Default
     int heartBeatInterval = 1000;
 
+
+    @Builder.Default
+    int entriesPushInterval = 1000;
+
+    @Builder.Default
+    int entriesPushMaxCount = 1000;
+
 }

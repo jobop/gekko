@@ -1,3 +1,4 @@
+
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -14,36 +15,29 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *
- * Created by CuttleFish on 2020/7/2.
+ * Created by CuttleFish on 2020/7/22.
  */
-package com.github.jobop.gekko.protocols.message.node;
 
-import com.github.jobop.gekko.protocols.message.GekkoEntry;
-import lombok.Builder;
-import lombok.Data;
-import lombok.Singular;
+package com.github.jobop.gekko.utils;
 
-import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.concurrent.*;
+
+public class Utils {
+    public static ThreadPoolExecutor GOABL_DEFAULT_THREAD_POOL = new ThreadPoolExecutor(cpus() * 2,
+            cpus() * 16,
+            60, TimeUnit.SECONDS,
+            new SynchronousQueue<>());
+
+    public static int CPUS = Runtime.getRuntime().availableProcessors();
+
+    public static int cpus() {
+        return CPUS;
+    }
+
+    public static void invokeWithDefaultExcutor(Runnable r) {
+        GOABL_DEFAULT_THREAD_POOL.submit(r);
+    }
 
 
-@Data
-@Builder
-public class PushEntryReq implements Serializable {
-    /**
-     * for serialization
-     */
-    private static final long serialVersionUID = -1288207208017808618L;
-    private String group;
-    private String remoteNodeId;
-    private long lastCommitIndex;
-    private long term;
-    private long preCheckSum;
 
-    private long startIndex;
-    private long endIndex;
-    private long count;
-    @Singular
-    List<GekkoEntry> entries = new ArrayList<>();
 }
