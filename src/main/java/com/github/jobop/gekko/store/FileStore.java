@@ -75,7 +75,7 @@ public class FileStore extends AbstractStore {
         indexFile = new AutoRollMMapFile(BASE_FILE_PATH + File.separator + "index", GekkoIndex.INDEX_SIZE * conf.getIndexCountPerFile(), conf.getOsPageSize());
         dataFile.load();
         indexFile.load();
-        this.maxIndex = indexFile.getMaxOffset() == 0 ? 0 : (indexFile.getMaxOffset() / GekkoIndex.INDEX_SIZE) + 1;
+        this.maxIndex = indexFile.getMaxOffset() == 0 ? 0 : (indexFile.getMaxOffset() / GekkoIndex.INDEX_SIZE) ;
 
         this.fileFlushThread = new NotifyableThread(this.conf.getFlushInterval(), TimeUnit.SECONDS, "flush-thread") {
             @Override

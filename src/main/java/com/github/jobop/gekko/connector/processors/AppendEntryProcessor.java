@@ -46,11 +46,7 @@ public class AppendEntryProcessor extends DefaultProcessor<AppendEntryReq> {
      */
     public void handleRequest(BizContext bizCtx, AsyncContext asyncCtx, AppendEntryReq request) {
         log.info("### recived a append req ");
-        helper.handleAppendEntry(request, entry -> {
-            if (entry.getPos() != -1) {
-                asyncCtx.sendResponse(AppendEntryResp.builder().index(entry.getEntryIndex()).resultCode(ResultEnums.SUCCESS).build());
-            }
-        });
+        asyncCtx.sendResponse(helper.handleAppendEntry(request));
     }
 
     public String interest() {

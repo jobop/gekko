@@ -166,4 +166,10 @@ public class NodeState extends LifeCycleAdpter {
         return this.role==RoleEnum.FOLLOWER;
     }
 
+    public boolean isCandidate(){
+        return this.role==RoleEnum.CANDIDATE;
+    }
+    public boolean isPreCandidate(){
+        return this.role==RoleEnum.PRE_CANDIDATE;
+    }
 }

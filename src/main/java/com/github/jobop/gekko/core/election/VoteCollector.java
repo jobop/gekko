@@ -56,7 +56,11 @@ public class VoteCollector implements InvokeCallback {
 
     @Override
     public void onResponse(Object result) {
+
         synchronized (nodeState) {
+            if (!nodeState.isCandidate()) {
+                return;
+            }
             VoteResp resp = (VoteResp) result;
             if (resp.getTerm() != this.voteTerm) {
                 log.warn("this vote term has expired! term=" + this.getVoteTerm());
@@ -93,7 +97,7 @@ public class VoteCollector implements InvokeCallback {
 
     @Override
     public Executor getExecutor() {
-        return Utils.GOABL_DEFAULT_THREAD_POOL;
+        return Executors.newSingleThreadExecutor();
     }
 
     public void disAble() {

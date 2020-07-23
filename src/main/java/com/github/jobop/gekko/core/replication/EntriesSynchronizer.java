@@ -39,6 +39,7 @@ import lombok.extern.slf4j.Slf4j;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
@@ -47,7 +48,7 @@ import java.util.stream.Collectors;
 @Slf4j
 public class EntriesSynchronizer extends LifeCycleAdpter {
     //<term,<peerId,writeIndex>>
-    private Map<String, ConcurrentHashMap<String, Long>> peerTermWaterMarks = new HashMap<String, ConcurrentHashMap<String, Long>>();
+    private Map<Long, ConcurrentHashMap<String, Long>> peerTermWaterMarks = new HashMap<Long, ConcurrentHashMap<String, Long>>();
     GekkoConfig conf;
     Store store;
     GekkoNodeNettyClient client;
@@ -66,6 +67,9 @@ public class EntriesSynchronizer extends LifeCycleAdpter {
             }
         };
         state.getPeersMap().forEach((k, v) -> {
+            if (k.equals(state.getSelfId())) {
+                return;
+            }
             replicators.add(new Replicator(k, v));
         });
 
@@ -79,11 +83,14 @@ public class EntriesSynchronizer extends LifeCycleAdpter {
 
     @Override
     public void shutdown() {
+
         commitIndexUpdateThread.shutdown();
         replicators.forEach(r -> r.shutdown());
     }
 
     public void triggerProbes() {
+//        peerTermWaterMarks.getOrDefault(entry.getTerm(), new ConcurrentHashMap<String, Long>()).put(state.getSelfId(), entry.getEntryIndex());
+
         replicators.forEach(r -> r.start());
     }
 
@@ -92,21 +99,34 @@ public class EntriesSynchronizer extends LifeCycleAdpter {
     }
 
     public void accept(GekkoEntry entry) {
+        ConcurrentHashMap peerMap = peerTermWaterMarks.getOrDefault(entry.getTerm(), new ConcurrentHashMap<String, Long>());
+        peerMap.put(state.getSelfId(), entry.getEntryIndex());
+        peerTermWaterMarks.put(entry.getTerm(), peerMap);
+
         replicators.forEach(r -> r.accept(entry));
     }
 
     private Long getQuorumIndex() {
         ConcurrentHashMap<String, Long> termWaterMarks = peerTermWaterMarks.get(state.getTerm());
+        //当前期还没有产生数据，用之前的
         if (null == termWaterMarks) {
-            return -1l;
+            return state.getCommitId();
         }
         //sort and get the middle one index
         List<Long> sortedWaterMarks = termWaterMarks.values()
                 .stream()
                 .sorted(Comparator.reverseOrder())
                 .collect(Collectors.toList());
-        long quorumIndex = sortedWaterMarks.get(sortedWaterMarks.size() / 2);
-        return quorumIndex;
+        //少于一半人情况已知
+        if (sortedWaterMarks.size() < (state.getPeersMap().size() / 2) + 1) {
+            return state.getCommitId();
+        } else {
+            //大于等于一半人情况已知
+            long quorumIndex = sortedWaterMarks.get(state.getPeersMap().size() / 2);
+            return quorumIndex;
+        }
+
+
     }
 
 
@@ -145,8 +165,6 @@ public class EntriesSynchronizer extends LifeCycleAdpter {
     class Replicator extends LifeCycleAdpter {
         private Peer peer;
         private String peerId;
-        GekkoConfig conf;
-        NodeState state;
 
         NotifyableThread replicateThread;
         volatile long nexReplicateIndex = 0;
@@ -161,11 +179,11 @@ public class EntriesSynchronizer extends LifeCycleAdpter {
         public Replicator(String peerId, Peer peer) {
             this.peerId = peerId;
             this.peer = peer;
+            //TODO:
             replicateThread = new NotifyableThread(conf.getEntriesPushInterval(), TimeUnit.MILLISECONDS, "Replicator-" + peerId) {
                 @Override
                 public void doWork() {
                     if (!start.get()) {
-                        log.info("the replicator has stop!");
                         return;
                     }
                     if (!state.isLeader()) {
@@ -185,20 +203,29 @@ public class EntriesSynchronizer extends LifeCycleAdpter {
 
         private void push() {
             //TODO:
-            long fromIndex = getnextIndex() + 1;
+            long fromIndex = getnextIndex();
             long maxIndex = store.getMaxIndex();
-            long endIndex = (maxIndex - fromIndex) > conf.getEntriesPushMaxCount() ?
-                    fromIndex + conf.getEntriesPushMaxCount() : maxIndex;
-            GekkoEntry preEntry = store.getByIndex(getnextIndex());
-            List<GekkoEntry> entries = store.batchGetByIndex(fromIndex, endIndex);
-            if (null == entries) {
+            if (maxIndex < fromIndex) {
                 return;
             }
+
+            long endIndex = (maxIndex - fromIndex) > conf.getEntriesPushMaxCount() ?
+                    fromIndex + conf.getEntriesPushMaxCount() : maxIndex;
+            GekkoEntry preEntry = store.getByIndex(fromIndex - 1);
+            List<GekkoEntry> entries = store.batchGetByIndex(fromIndex, endIndex + 1);
+            if (null == entries || entries.isEmpty()) {
+                return;
+            }
+            long preCheckSum = 0;
+            if (null != preEntry) {
+                preCheckSum = preEntry.getChecksum();
+            }
+            log.info("###need push index from " + fromIndex + " to " + endIndex);
+
             PenddingEntryBatch penddingEntry = PenddingEntryBatch.builder().
                     startIndex(entries.get(0).getEntryIndex()).
                     endIndex(entries.get(entries.size() - 1).getEntryIndex()).
-                    preCommitIndex(preEntry.getEntryIndex()).
-                    preCheckSum(preEntry.getChecksum()).
+                    preCheckSum(preCheckSum).
                     entries(entries).
                     preCommitIndex(state.getCommitId()).count(entries.size()).build();
 
@@ -220,7 +247,9 @@ public class EntriesSynchronizer extends LifeCycleAdpter {
                         default:
                             if (remoteIndex > nexReplicateIndex) {
                                 nexReplicateIndex = remoteIndex;
-                                peerTermWaterMarks.getOrDefault(state.getTerm(), new ConcurrentHashMap<String, Long>()).putIfAbsent(peerId, nexReplicateIndex);
+                                ConcurrentHashMap peerMap = peerTermWaterMarks.getOrDefault(state.getTerm(), new ConcurrentHashMap<String, Long>());
+                                peerMap.put(peerId, remoteIndex - 1);
+                                peerTermWaterMarks.put(state.getTerm(), peerMap);
                             }
                             penddingQueue.remove(penddingEntry);
                             return;
@@ -238,7 +267,7 @@ public class EntriesSynchronizer extends LifeCycleAdpter {
 
                 @Override
                 public Executor getExecutor() {
-                    return Utils.GOABL_DEFAULT_THREAD_POOL;
+                    return Executors.newSingleThreadExecutor();
                 }
             });
 
@@ -249,13 +278,12 @@ public class EntriesSynchronizer extends LifeCycleAdpter {
             if (penddingQueue.isEmpty()) {
                 return nexReplicateIndex;
             } else {
-                return lastPenddingEntryBatch.getEndIndex();
+                return lastPenddingEntryBatch.getEndIndex() + 1;
             }
         }
 
         private void probe() {
             if (!start.get()) {
-                log.info("the replicator has stop!");
                 return;
             }
 
@@ -268,38 +296,53 @@ public class EntriesSynchronizer extends LifeCycleAdpter {
                 public void onResponse(Object result) {
                     ProbeResp resp = (ProbeResp) result;
                     if (resp.getResult() == ResultEnums.SUCCESS) {
-                        if (resp.getWrotenIndex() > nexReplicateIndex) {
-                            nexReplicateIndex = resp.getWrotenIndex();
+                        if (resp.getTerm() != state.getTerm()) {
+                            return;
+                        }
+                        log.info("### probe remoteNextId=" + resp.getNextIndex() + " remoteTerm=" + resp.getTerm() + " localIndex=" + state.getWriteId());
+
+                        ConcurrentHashMap peerMap = peerTermWaterMarks.getOrDefault(resp.getTerm(), new ConcurrentHashMap<String, Long>());
+                        peerMap.put(peerId, resp.getCommitIndex());
+                        peerTermWaterMarks.put(state.getTerm(), peerMap);
+
+                        if (resp.getNextIndex() > state.getWriteId() + 1) {
+                            //TODO:如果对方比主大，则要truncate它
+                            nexReplicateIndex = state.getCommitId() + 1;
+                            needProbe = false;
+
+                        } else if (resp.getNextIndex() >= nexReplicateIndex) {
+                            nexReplicateIndex = resp.getNextIndex();
                             needProbe = false;
                         }
-
-                    } else {
-                        Utils.invokeWithDefaultExcutor(() -> probe());
                     }
                 }
 
                 @Override
                 public void onException(Throwable e) {
                     log.error("send probe to " + peerId + " fail", e);
-                    Utils.invokeWithDefaultExcutor(() -> probe());
                 }
 
                 @Override
                 public Executor getExecutor() {
-                    return Utils.GOABL_DEFAULT_THREAD_POOL;
+                    return Executors.newSingleThreadExecutor();
                 }
             });
         }
 
 
         public void start() {
-            penddingQueue.clear();
-            this.lastPenddingEntryBatch = null;
+            clear();
             if (start.compareAndSet(false, true)) {
 
                 needProbe = true;
             }
 
+        }
+
+        private void clear() {
+            this.penddingQueue.clear();
+            this.lastPenddingEntryBatch = null;
+            this.nexReplicateIndex = 0;
         }
 
         public void stop() {

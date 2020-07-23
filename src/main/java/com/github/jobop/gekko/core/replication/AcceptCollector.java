@@ -76,6 +76,6 @@ public class AcceptCollector implements InvokeCallback {
 
     @Override
     public Executor getExecutor() {
-        return Utils.GOABL_DEFAULT_THREAD_POOL;
+        return Executors.newSingleThreadExecutor();
     }
 }

@@ -24,6 +24,7 @@ import com.github.jobop.gekko.core.metadata.NodeState;
 import com.github.jobop.gekko.core.replication.EntriesSynchronizer;
 import com.github.jobop.gekko.core.statemachine.StateMachine;
 import com.github.jobop.gekko.enums.PushResultEnums;
+import com.github.jobop.gekko.enums.ResultEnums;
 import com.github.jobop.gekko.protocols.GekkoInboundProtocol;
 import com.github.jobop.gekko.protocols.message.GekkoEntry;
 import com.github.jobop.gekko.protocols.message.api.*;
@@ -64,7 +65,6 @@ public class GekkoInboundMsgHelper implements GekkoInboundProtocol {
     public PullEntryResp handleGetEntries(PullEntryReq req) {
 
         List<GekkoEntry> entries = store.batchGetByIndex(req.getFromIndex(), req.getToIndex());
-        log.info("### handler pull req from follower entries size=" + entries.size());
         return PullEntryResp.builder().enries(entries).build();
     }
 
@@ -75,19 +75,15 @@ public class GekkoInboundMsgHelper implements GekkoInboundProtocol {
      * @return
      */
     @Override
-    public void handleAppendEntry(AppendEntryReq req, Consumer consumer) {
+    public AppendEntryResp handleAppendEntry(AppendEntryReq req) {
         GekkoEntry entry = req.getGekkoEntry();
         store.append(entry);
-        if (entry.getPos() == -1) {
-            log.info("### local append success pos=" + entry.getPos());
-            consumer.accept(entry);
-            return;
+        if (entry.getPos() != -1) {
+            entriesSynchronizer.accept(entry);
+            return AppendEntryResp.builder().index(entry.getEntryIndex()).resultCode(ResultEnums.SUCCESS).build();
+        } else {
+            return AppendEntryResp.builder().index(-1).resultCode(ResultEnums.APPEND_FAIL).build();
         }
-        //FIXME:
-        List<GekkoEntry> entries = new ArrayList<GekkoEntry>();
-        entries.add(entry);
-        client.pushDatas(entries, null);
-        entriesSynchronizer.push(entry);
     }
 
     /**
@@ -136,8 +132,10 @@ public class GekkoInboundMsgHelper implements GekkoInboundProtocol {
         log.info("### handler push entry  index=" + req.getStartIndex());
 
         //normal
-        //FIXME:
-        if (this.nodeState.getLastChecksum() != 0 && (this.nodeState.getLastChecksum() == req.getPreCheckSum())) {
+        //FIXME:同样批次发了两次要怎么处理？如果直接reject的话会有问题
+        if (
+                this.nodeState.getLastChecksum() == 0 ||
+                        (this.nodeState.getLastChecksum() != 0 && this.nodeState.getLastChecksum() == req.getPreCheckSum())) {
             log.info("checksum is match do append!");
             for (GekkoEntry entry : req.getEntries()) {
                 if (this.nodeState.getWriteId() >= entry.getEntryIndex()) {
@@ -150,17 +148,16 @@ public class GekkoInboundMsgHelper implements GekkoInboundProtocol {
                 }
                 this.store.append(entry);
                 if (entry.getPos() != -1) {
-                    log.warn("follower append success!");
-                    this.nodeState.setLastChecksum(entry.getChecksum());
+                    log.info("follower append success!");
                 } else {
                     log.warn("follower append fail!");
-                    return PushEntryResp.builder().group(nodeState.getGroup()).acceptNodeId(nodeState.getSelfId()).term(nodeState.getTerm()).index(nodeState.getWriteId()).result(PushResultEnums.REJECT).build();
+                    return PushEntryResp.builder().group(nodeState.getGroup()).acceptNodeId(nodeState.getSelfId()).term(nodeState.getTerm()).index(nodeState.getWriteId() + 1).result(PushResultEnums.REJECT).build();
                 }
             }
             nodeState.setCommitId(req.getLastCommitIndex());
-            return PushEntryResp.builder().group(nodeState.getGroup()).acceptNodeId(nodeState.getSelfId()).index(nodeState.getWriteId()).term(nodeState.getTerm()).result(PushResultEnums.AGREE).build();
+            return PushEntryResp.builder().group(nodeState.getGroup()).acceptNodeId(nodeState.getSelfId()).index(nodeState.getWriteId() + 1).term(nodeState.getTerm()).result(PushResultEnums.AGREE).build();
         } else {
-            return PushEntryResp.builder().group(nodeState.getGroup()).acceptNodeId(nodeState.getSelfId()).index(nodeState.getWriteId()).term(nodeState.getTerm()).result(PushResultEnums.AGREE).build();
+            return PushEntryResp.builder().group(nodeState.getGroup()).acceptNodeId(nodeState.getSelfId()).index(nodeState.getWriteId() + 1).term(nodeState.getTerm()).result(PushResultEnums.REJECT).build();
         }
 
     }

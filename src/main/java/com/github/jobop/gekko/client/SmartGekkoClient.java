@@ -82,6 +82,7 @@ public class SmartGekkoClient extends LifeCycleAdpter {
     @Override
     public void start() {
         rpcClient.startup();
+
         //refresh peers
         boolean startSuccess = false;
         for (Map.Entry<String, Peer> e : this.peersMap.entrySet()) {

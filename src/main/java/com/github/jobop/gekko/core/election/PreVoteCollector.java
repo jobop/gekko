@@ -36,6 +36,7 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 @Slf4j
@@ -59,6 +60,10 @@ public class PreVoteCollector implements InvokeCallback {
 
     @Override
     public void onResponse(Object result) {
+        log.info("### receive a preVote result=" + result + " nodeState.isPreCandidate() =" + nodeState.isPreCandidate());
+        if (!nodeState.isPreCandidate()) {
+            return;
+        }
         PreVoteResp resp = (PreVoteResp) result;
         if (resp.getTerm() != this.getVoteTerm()) {
             log.warn("this vote term has expired! thisterm=" + this.getVoteTerm() + " resp term=" + resp.getTerm());
@@ -102,7 +107,7 @@ public class PreVoteCollector implements InvokeCallback {
 
     @Override
     public Executor getExecutor() {
-        return Utils.GOABL_DEFAULT_THREAD_POOL;
+        return Executors.newSingleThreadExecutor();
     }
 
     public void disAble() {

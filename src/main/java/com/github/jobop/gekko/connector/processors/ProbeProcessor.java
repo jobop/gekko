@@ -27,39 +27,33 @@ import com.github.jobop.gekko.core.metadata.NodeState;
 import com.github.jobop.gekko.core.metadata.Peer;
 import com.github.jobop.gekko.enums.ResultEnums;
 import com.github.jobop.gekko.protocols.GekkoInboundProtocol;
-import com.github.jobop.gekko.protocols.message.api.GetMetadataReq;
-import com.github.jobop.gekko.protocols.message.api.GetMetadataResp;
+import com.github.jobop.gekko.protocols.message.node.ProbeReq;
+import com.github.jobop.gekko.protocols.message.node.ProbeResp;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
 
 @Slf4j
-public class GetMetadataProcessor extends DefaultProcessor<GetMetadataReq> {
+public class ProbeProcessor extends DefaultProcessor<ProbeReq> {
     GekkoLeaderElector elector;
 
-    public GetMetadataProcessor(GekkoInboundProtocol helper, GekkoLeaderElector elector) {
+    public ProbeProcessor(GekkoInboundProtocol helper, GekkoLeaderElector elector) {
         super(helper);
         this.elector = elector;
     }
 
     @Override
-    public void handleRequest(BizContext bizCtx, AsyncContext asyncCtx, GetMetadataReq request) {
+    public void handleRequest(BizContext bizCtx, AsyncContext asyncCtx, ProbeReq request) {
         NodeState nodeState = elector.getState();
         List<String> peerIds = new ArrayList<>();
         List<Peer> peers = new ArrayList<>();
-        for (Map.Entry<String, Peer> e : nodeState.getPeersMap().entrySet()) {
-            peerIds.add(e.getKey());
-            peers.add(e.getValue());
-        }
-        asyncCtx.sendResponse(GetMetadataResp.builder().result(ResultEnums.SUCCESS).leaderId(nodeState.getLeaderId()).peersMap(nodeState.getPeersMap()).term(nodeState.getTerm()).build());
+        asyncCtx.sendResponse(ProbeResp.builder().result(ResultEnums.SUCCESS).commitIndex(nodeState.getCommitId()).nextIndex(nodeState.getWriteId() + 1).term(nodeState.getTerm()).build());
 
     }
 
     @Override
     public String interest() {
-        return GetMetadataReq.class.getName();
+        return ProbeReq.class.getName();
     }
 }

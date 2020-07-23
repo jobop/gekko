@@ -35,8 +35,8 @@ public class TestClient {
         client.init();
         client.start();
 
-        for(int i=0;i<100;i++){
-            client.append("999".getBytes());
+        for(int i=0;i<2;i++){
+            client.append("卧槽".getBytes());
         }
 
         latch.await();

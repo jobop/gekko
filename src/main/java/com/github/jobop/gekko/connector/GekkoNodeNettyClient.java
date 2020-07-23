@@ -143,7 +143,14 @@ public class GekkoNodeNettyClient extends LifeCycleAdpter implements GekkoNodeCo
             Peer peer = e.getValue();
             try {
                 //FIXME:
-                orderNodesRpcClient.invokeWithCallback(parser.parse(peer.getNodeUrl()), VoteReq.builder().group(nodeState.getGroup()).term(voteCollector.getVoteTerm()).candidateId(nodeState.getSelfId()).lastIndex(nodeState.getCommitId()).build(), voteCollector, WAIT_FOR_VOTE_TIME_OUT);
+                orderNodesRpcClient.invokeWithCallback(
+                        parser.parse(peer.getNodeUrl()),
+                        VoteReq.builder().
+                                group(nodeState.getGroup()).
+                                term(voteCollector.getVoteTerm()).
+                                candidateId(nodeState.getSelfId()).
+                                lastIndex(nodeState.getCommitId()).
+                                build(), voteCollector, WAIT_FOR_VOTE_TIME_OUT);
             } catch (RemotingException remotingException) {
                 remotingException.printStackTrace();
             } catch (InterruptedException interruptedException) {
@@ -189,8 +196,8 @@ public class GekkoNodeNettyClient extends LifeCycleAdpter implements GekkoNodeCo
                     entries(penddingEntry.getEntries()).
                     remoteNodeId(nodeState.getSelfId()).
                     term(nodeState.getTerm()).
-                    lastCommitIndex(nodeState.getCommitId()).
-                    preCheckSum(nodeState.getPreChecksum()).
+                    lastCommitIndex(penddingEntry.getPreCommitIndex()).
+                    preCheckSum(penddingEntry.getPreCheckSum()).
                     count(penddingEntry.getCount()).
                     startIndex(startIndex).
                     endIndex(endIndex).

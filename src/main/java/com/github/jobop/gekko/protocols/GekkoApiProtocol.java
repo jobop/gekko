@@ -30,7 +30,7 @@ import java.util.function.Consumer;
 public interface GekkoApiProtocol {
     public PullEntryResp handleGetEntries(PullEntryReq req);
 
-    public void handleAppendEntry(AppendEntryReq req, Consumer<GekkoEntry> consumer);
+    public AppendEntryResp handleAppendEntry(AppendEntryReq req);
     //获取元数据
 
     public GetMetadataResp handleGetMetadata(GetMetadataReq req);

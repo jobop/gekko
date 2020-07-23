@@ -29,6 +29,7 @@ import java.io.Serializable;
 @Builder
 public class ProbeResp implements Serializable {
     private long commitIndex;
-    private long wrotenIndex;
+    private long nextIndex;
     private ResultEnums result;
+    private long term;
 }

@@ -45,7 +45,7 @@ public class GekkoNode extends LifeCycleAdpter {
     Store store;
     StateMachine stateMachine;
     GekkoLeaderElector elector;
-    EntriesSynchronizer pusher;
+    EntriesSynchronizer synchronizer;
 
     public GekkoNode(GekkoConfig conf) {
         this.conf = conf;
@@ -61,12 +61,12 @@ public class GekkoNode extends LifeCycleAdpter {
         this.stateMachine = conf.getStateMachine();
 
         this.nodeClient = new GekkoNodeNettyClient(conf, nodeState);
-        this.pusher=new EntriesSynchronizer(conf, nodeClient, nodeState,store);
-        this.elector = new GekkoLeaderElector(conf, nodeClient, nodeState,this.pusher);
+        this.synchronizer =new EntriesSynchronizer(conf, nodeClient, nodeState,store);
+        this.elector = new GekkoLeaderElector(conf, nodeClient, nodeState,this.synchronizer);
 
 
 
-        this.inboundHelper = new GekkoInboundMsgHelper(this.store, this.stateMachine,this.nodeState, this.pusher,this.nodeClient);
+        this.inboundHelper = new GekkoInboundMsgHelper(this.store, this.stateMachine,this.nodeState, this.synchronizer,this.nodeClient);
         this.server = new GekkoNettyServer(conf, this.inboundHelper, this.nodeState,this.elector);
 
 
@@ -81,7 +81,7 @@ public class GekkoNode extends LifeCycleAdpter {
         this.server.init();
         this.nodeClient.init();
         this.elector.init();
-        this.pusher.init();
+        this.synchronizer.init();
     }
 
     @Override
@@ -91,7 +91,7 @@ public class GekkoNode extends LifeCycleAdpter {
         this.server.start();
         this.nodeClient.start();
         this.elector.start();
-        this.pusher.start();
+        this.synchronizer.start();
     }
 
     @Override
@@ -101,6 +101,6 @@ public class GekkoNode extends LifeCycleAdpter {
         this.server.shutdown();
         this.nodeClient.shutdown();
         this.elector.shutdown();
-        this.pusher.shutdown();
+        this.synchronizer.shutdown();
     }
 }

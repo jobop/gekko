@@ -32,7 +32,8 @@ public enum ResultEnums {
 
     LOAD_FILE_FAIL("LoadFileFail","LoadFileFail"),
 
-    CLIENT_LOAD_FAIL("CLIENT_LOAD_FAIL","CLIENT_LOAD_FAIL")
+    CLIENT_LOAD_FAIL("CLIENT_LOAD_FAIL","CLIENT_LOAD_FAIL"),
+    APPEND_FAIL("APPEND_FAIL","APPEND_FAIL")
 
     ;
     private String code;
