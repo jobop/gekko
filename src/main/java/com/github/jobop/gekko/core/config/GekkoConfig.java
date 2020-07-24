@@ -69,6 +69,6 @@ public class GekkoConfig {
     int entriesPushInterval = 1000;
 
     @Builder.Default
-    int entriesPushMaxCount = 10000;
+    int entriesPushMaxCount = 1000;
 
 }

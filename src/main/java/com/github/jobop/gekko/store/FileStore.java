@@ -244,8 +244,14 @@ public class FileStore extends AbstractStore {
                 this.nodeState.setCommitId(fromIndex);
             }
 //            this.nodeState.setCommitId(fromIndex);
-            this.nodeState.setLastChecksum(this.getByIndex(fromIndex).getChecksum());
-            this.maxIndex=fromIndex;
+            GekkoEntry preEntry = this.getByIndex(fromIndex);
+            if (null != preEntry) {
+                this.nodeState.setLastChecksum(preEntry.getChecksum());
+            } else if (fromIndex == 0) {
+                this.nodeState.setLastChecksum(0);
+            }
+
+            this.maxIndex = fromIndex;
         }
 
     }

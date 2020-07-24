@@ -169,6 +169,7 @@ public class EntriesSynchronizer extends LifeCycleAdpter {
         NotifyableThread replicateThread;
         volatile long nexReplicateIndex = 0;
         volatile boolean needProbe = true;
+        volatile boolean needTrim=false;
 
         List<PenddingEntryBatch> penddingQueue = new ArrayList<>();
 

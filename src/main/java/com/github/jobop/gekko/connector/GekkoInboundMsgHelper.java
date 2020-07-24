@@ -128,11 +128,17 @@ public class GekkoInboundMsgHelper implements GekkoInboundProtocol {
      * @return
      */
     @Override
-    public synchronized PushEntryResp handlePushDatas(PushEntryReq req) {
+    public PushEntryResp handlePushDatas(PushEntryReq req) {
         log.info("### handler push entry  index=" + req.getStartIndex());
 
+
         //normal
-        //FIXME:同样批次发了两次要怎么处理？如果直接reject的话会有问题
+        //FIXME:
+        //如果发送的index小于index，那么先trim，防止同一个批次重试导致的数据处理失败
+        if (req.getStartIndex() < nodeState.getWriteId()) {
+            store.trimAfter(req.getStartIndex() - 1);
+        }
+
         if (
                 this.nodeState.getLastChecksum() == 0 ||
                         (this.nodeState.getLastChecksum() != 0 && this.nodeState.getLastChecksum() == req.getPreCheckSum())) {
@@ -150,7 +156,9 @@ public class GekkoInboundMsgHelper implements GekkoInboundProtocol {
                 if (entry.getPos() != -1) {
                     log.info("follower append success!");
                 } else {
+                    //FIXME: return part success error code
                     log.warn("follower append fail!");
+
                     return PushEntryResp.builder().group(nodeState.getGroup()).acceptNodeId(nodeState.getSelfId()).term(nodeState.getTerm()).index(nodeState.getWriteId() + 1).result(PushResultEnums.REJECT).build();
                 }
             }
