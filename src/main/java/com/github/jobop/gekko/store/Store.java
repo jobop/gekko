@@ -39,6 +39,7 @@ public interface Store extends LifeCycle {
 
 
     public long getMaxIndex();
+    //[fromIndex,]
     public void trimAfter(long fromIndex);
     public void trimBefore(long toIndex);
 

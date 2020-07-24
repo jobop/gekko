@@ -200,6 +200,7 @@ public class AutoRollMMapFile implements ComposeMMapFile, SequenceFile, SlicedAb
 
         return true;
     }
+
     //FIXME:it's not good to dependency to the data what we write,we can wrap a protocol the identify the size
     private void repairMetaData(MmapFile dataFile, MmapFile metaDataFile) {
         ByteBuffer byteBuffer = dataFile.sliceByteBuffer();
@@ -305,8 +306,8 @@ public class AutoRollMMapFile implements ComposeMMapFile, SequenceFile, SlicedAb
     }
 
     public List<SlicedByteBuffer> selectMutilBufferToRead(long fromPos, long toPos) {
-        if(toPos==-1){
-            toPos=this.getMaxOffset();
+        if (toPos == -1) {
+            toPos = this.getMaxOffset();
         }
         long size = toPos - fromPos;
         List<SlicedByteBuffer> buffers = new ArrayList<SlicedByteBuffer>();
@@ -373,7 +374,7 @@ public class AutoRollMMapFile implements ComposeMMapFile, SequenceFile, SlicedAb
     private MmapFile chooseMMapFileToRead(long pos) {
         //calac the pos belong to which file
         int fileIndex = (int) pos / this.singleFileSize;
-        if (fileIndex > this.allFiles.size()-1) {
+        if (fileIndex > this.allFiles.size() - 1) {
             log.warn("the ops overflow ops=" + pos + " and filelist size=" + this.allFiles.size());
             return null;
         }
@@ -462,7 +463,7 @@ public class AutoRollMMapFile implements ComposeMMapFile, SequenceFile, SlicedAb
     public long trimAfter(long pos) {
         List<MmapFile> needRemoveFiles = new ArrayList<MmapFile>();
         for (MmapFile file : this.allFiles) {
-            if (file.getFileFromOffset() <= pos) {
+            if (file.getFileFromOffset() + singleFileSize <= pos) {
                 continue;
             }
             if (file.getFileFromOffset() > pos) {

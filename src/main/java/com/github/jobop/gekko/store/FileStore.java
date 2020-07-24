@@ -210,7 +210,7 @@ public class FileStore extends AbstractStore {
         if (null == toGekkoIndex) {
             return this.batchGet(fromGekkoIndex.getDataPos(), -1);
         } else {
-            return this.batchGet(fromGekkoIndex.getDataPos(), toGekkoIndex.getDataPos()+toGekkoIndex.getDataSize());
+            return this.batchGet(fromGekkoIndex.getDataPos(), toGekkoIndex.getDataPos() + toGekkoIndex.getDataSize());
         }
 
     }
@@ -230,18 +230,22 @@ public class FileStore extends AbstractStore {
     }
 
     public void trimAfter(long fromIndex) {
-        if (fromIndex < 1) {
-            fromIndex = 1;
+        if (fromIndex < 0) {
+            fromIndex = 0;
             log.info("no need to trim fromIndex=-1");
             return;
         }
-        GekkoIndex index = getGekkoIndex(fromIndex);
+        GekkoIndex index = getGekkoIndex(fromIndex + 1);
         if (null != index) {
             this.dataFile.trimAfter(index.getDataPos());
             this.indexFile.trimAfter(fromIndex * GekkoIndex.INDEX_SIZE);
             this.nodeState.setWriteId(fromIndex);
+            if (fromIndex <= this.nodeState.getCommitId()) {
+                this.nodeState.setCommitId(fromIndex);
+            }
 //            this.nodeState.setCommitId(fromIndex);
             this.nodeState.setLastChecksum(this.getByIndex(fromIndex).getChecksum());
+            this.maxIndex=fromIndex;
         }
 
     }
