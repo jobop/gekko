@@ -212,7 +212,7 @@ public class EntriesSynchronizer extends LifeCycleAdpter {
             long endIndex = (maxIndex - fromIndex) > conf.getEntriesPushMaxCount() ?
                     fromIndex + conf.getEntriesPushMaxCount() : maxIndex;
             GekkoEntry preEntry = store.getByIndex(fromIndex - 1);
-            List<GekkoEntry> entries = store.batchGetByIndex(fromIndex, endIndex + 1);
+            List<GekkoEntry> entries = store.batchGetByIndex(fromIndex, endIndex+1);
             if (null == entries || entries.isEmpty()) {
                 return;
             }
@@ -262,7 +262,7 @@ public class EntriesSynchronizer extends LifeCycleAdpter {
                     //TODO:
                     penddingQueue.clear();
                     lastPenddingEntryBatch = null;
-                    log.error("", e);
+                    log.error("push data exception", e);
                 }
 
                 @Override

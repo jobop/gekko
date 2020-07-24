@@ -48,6 +48,7 @@ public class ProbeProcessor extends DefaultProcessor<ProbeReq> {
         NodeState nodeState = elector.getState();
         List<String> peerIds = new ArrayList<>();
         List<Peer> peers = new ArrayList<>();
+        this.elector.asFollower(request.getTerm(), request.getRemoteNodeId());
         asyncCtx.sendResponse(ProbeResp.builder().result(ResultEnums.SUCCESS).commitIndex(nodeState.getCommitId()).nextIndex(nodeState.getWriteId() + 1).term(nodeState.getTerm()).build());
 
     }

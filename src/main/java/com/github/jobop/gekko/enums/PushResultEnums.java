@@ -21,5 +21,6 @@ package com.github.jobop.gekko.enums;
 
 
 public enum PushResultEnums {
-    AGREE,REJECT
+    //TODO: FIXME: HAFT_AGREE
+    AGREE,REJECT,HAFT_AGREE
 }

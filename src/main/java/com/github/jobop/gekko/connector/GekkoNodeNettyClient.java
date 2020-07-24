@@ -22,6 +22,7 @@ package com.github.jobop.gekko.connector;
 
 
 import com.alipay.remoting.InvokeCallback;
+import com.alipay.remoting.config.switches.GlobalSwitch;
 import com.alipay.remoting.exception.RemotingException;
 import com.alipay.remoting.rpc.RpcClient;
 import com.alipay.remoting.rpc.RpcResponseFuture;
@@ -68,6 +69,9 @@ public class GekkoNodeNettyClient extends LifeCycleAdpter implements GekkoNodeCo
     @Override
     public void init() {
         orderNodesRpcClient = new RpcClient();
+        //FIXME: need deep into it
+        orderNodesRpcClient.switches().turnOn(GlobalSwitch.CODEC_FLUSH_CONSOLIDATION);
+        orderNodesRpcClient.initWriteBufferWaterMark(256 * 1024, 512 * 1024);
 
     }
 

@@ -19,6 +19,7 @@
 package com.github.jobop.gekko.client;
 
 
+import com.alipay.remoting.config.switches.GlobalSwitch;
 import com.alipay.remoting.exception.RemotingException;
 import com.alipay.remoting.rpc.RpcClient;
 import com.alipay.remoting.rpc.RpcResponseFuture;
@@ -32,6 +33,7 @@ import com.github.jobop.gekko.protocols.message.GekkoEntry;
 import com.github.jobop.gekko.protocols.message.api.AppendEntryReq;
 import com.github.jobop.gekko.protocols.message.api.GetMetadataReq;
 import com.github.jobop.gekko.protocols.message.api.GetMetadataResp;
+import com.github.jobop.gekko.utils.CekkoAddressParser;
 import com.github.jobop.gekko.utils.PreConditions;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
@@ -47,6 +49,8 @@ public class SmartGekkoClient extends LifeCycleAdpter {
     private volatile Map<String, Peer> peersMap = new ConcurrentHashMap<String, Peer>();
     private volatile String leaderPeerId;
 
+    CekkoAddressParser parser=new CekkoAddressParser();
+
     public SmartGekkoClient(GekkoClientConfig conf) {
         this.config = conf;
     }
@@ -54,7 +58,8 @@ public class SmartGekkoClient extends LifeCycleAdpter {
     @Override
     public void init() {
         rpcClient = new RpcClient();
-
+        rpcClient.switches().turnOn(GlobalSwitch.CODEC_FLUSH_CONSOLIDATION);
+        rpcClient.initWriteBufferWaterMark(2048 * 1024, 2048 * 1024);
         rpcClient.registerUserProcessor(new ClientRefreshPeersProcessor(this));
 
 
@@ -88,7 +93,7 @@ public class SmartGekkoClient extends LifeCycleAdpter {
         for (Map.Entry<String, Peer> e : this.peersMap.entrySet()) {
             Peer peer = e.getValue();
             try {
-                RpcResponseFuture respFuture = rpcClient.invokeWithFuture(peer.getHost() + ":" + peer.getApiPort(), GetMetadataReq.builder().group(config.getGroup()).build(), config.getConnectTimeout());
+                RpcResponseFuture respFuture = rpcClient.invokeWithFuture(parser.parse(peer.getApiUrl()), GetMetadataReq.builder().group(config.getGroup()).build(), config.getConnectTimeout());
 
                 GetMetadataResp resp = (GetMetadataResp) respFuture.get(config.getReadTimeout());
                 if (resp.getResult() == ResultEnums.SUCCESS) {
@@ -115,7 +120,7 @@ public class SmartGekkoClient extends LifeCycleAdpter {
         GekkoEntry entry = GekkoEntry.builder().data(data).magic(0xCAFE_BABE).build();
         RpcResponseFuture respFuture = null;
         try {
-            respFuture = rpcClient.invokeWithFuture(leaderPeer.getHost() + ":" + leaderPeer.getApiPort(), AppendEntryReq.builder().gekkoEntry(entry).build(), config.getConnectTimeout());
+            respFuture = rpcClient.invokeWithFuture(parser.parse(leaderPeer.getApiUrl()), AppendEntryReq.builder().gekkoEntry(entry).build(), config.getConnectTimeout());
         } catch (RemotingException e) {
             e.printStackTrace();
         } catch (InterruptedException e) {

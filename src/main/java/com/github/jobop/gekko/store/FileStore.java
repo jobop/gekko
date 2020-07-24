@@ -75,7 +75,7 @@ public class FileStore extends AbstractStore {
         indexFile = new AutoRollMMapFile(BASE_FILE_PATH + File.separator + "index", GekkoIndex.INDEX_SIZE * conf.getIndexCountPerFile(), conf.getOsPageSize());
         dataFile.load();
         indexFile.load();
-        this.maxIndex = indexFile.getMaxOffset() == 0 ? 0 : (indexFile.getMaxOffset() / GekkoIndex.INDEX_SIZE) ;
+        this.maxIndex = indexFile.getMaxOffset() == 0 ? 0 : (indexFile.getMaxOffset() / GekkoIndex.INDEX_SIZE);
 
         this.fileFlushThread = new NotifyableThread(this.conf.getFlushInterval(), TimeUnit.SECONDS, "flush-thread") {
             @Override
@@ -203,14 +203,14 @@ public class FileStore extends AbstractStore {
     @Override
     public List<GekkoEntry> batchGetByIndex(long fromIndex, long toIndex) {
         GekkoIndex fromGekkoIndex = getGekkoIndex(fromIndex);
-        GekkoIndex toGekkoIndex = getGekkoIndex(toIndex);
+        GekkoIndex toGekkoIndex = getGekkoIndex(toIndex - 1);
         if (null == fromGekkoIndex) {
             return new ArrayList<>();
         }
         if (null == toGekkoIndex) {
             return this.batchGet(fromGekkoIndex.getDataPos(), -1);
         } else {
-            return this.batchGet(fromGekkoIndex.getDataPos(), toGekkoIndex.getDataPos());
+            return this.batchGet(fromGekkoIndex.getDataPos(), toGekkoIndex.getDataPos()+toGekkoIndex.getDataSize());
         }
 
     }
@@ -248,6 +248,7 @@ public class FileStore extends AbstractStore {
 
     public void trimBefore(long toIndex) {
     }
+
     @Override
     public long getMaxIndex() {
         return this.maxIndex;

@@ -55,6 +55,7 @@ public class FileStoreTest extends BaseTest {
 
 
     }
+
     @Test
     public void testAppendAndBatchGet2() {
         String dirPath = "/Users/zhengwei/Desktop/autorollfiles";
@@ -90,6 +91,98 @@ public class FileStoreTest extends BaseTest {
     }
 
     @Test
+    public void testAppendAndBatchGet3() {
+        String dirPath = "/Users/zhengwei/Desktop/autorollfiles";
+        this.paths.add(dirPath);
+        GekkoConfig conf = GekkoConfig.builder().baseFilePath(dirPath).selfId("1").leaderId("1").storeType(StoreEnums.FILE).flushInterval(1).storeFileSize(1024 * 1024).indexCountPerFile(100000).osPageSize(1024 * 4).build();
+
+        NodeState nodeState = new NodeState(conf);
+        nodeState.init();
+        Store store = new FileStore(conf, nodeState);
+        store.init();
+        store.start();
+        String appendStr = "1sdfasdfasdfasdfasdfasdfasdfadf54545fasdfasdfasdfasdfasdfasdfadfa53345dfasdfasdfasdfasdfasdfasdfad9081nvsdfasdfasdfasdfasdfasdfadfasdfasdfasdfasdfasdfasdfasdfadfasdfasdfasdfasdfasdfasdfasdfad2";
+        byte[] bytes = appendStr.getBytes();
+        GekkoEntry entry = GekkoEntry.builder().magic(0xCAFEDADD).term(123).data(bytes).build();
+        entry.computSizeInBytes();
+        for (int i = 0; i < 10; i++) {
+            store.append(entry);
+
+        }
+
+        Assert.assertEquals(10, store.getMaxIndex());
+        List<GekkoEntry> entryList0 = store.batchGetByIndex(1, 2);
+        Assert.assertEquals(1, entryList0.get(0).getEntryIndex());
+        Assert.assertEquals(1, entryList0.size());
+
+        List<GekkoEntry> entryList1 = store.batchGetByIndex(1, 10);
+        Assert.assertEquals(9, entryList1.size());
+
+        List<GekkoEntry> entryList2 = store.batchGetByIndex(1, 11);
+        Assert.assertEquals(10, entryList2.size());
+    }
+
+
+    @Test
+    public void testAppendAndBatchGet4() {
+        String dirPath = "/Users/zhengwei/Desktop/autorollfiles";
+        this.paths.add(dirPath);
+        GekkoConfig conf = GekkoConfig.builder().baseFilePath(dirPath).selfId("1").leaderId("1").storeType(StoreEnums.FILE).flushInterval(1).storeFileSize(1024 * 1024).indexCountPerFile(100000).osPageSize(1024 * 4).build();
+
+        NodeState nodeState = new NodeState(conf);
+        nodeState.init();
+        Store store = new FileStore(conf, nodeState);
+        store.init();
+        store.start();
+        String appendStr = "1sdfasdfasdfasdfasdfasdfasdfadf54545fasdfasdfasdfasdfasdfasdfadfa53345dfasdfasdfasdfasdfasdfasdfad9081nvsdfasdfasdfasdfasdfasdfadfasdfasdfasdfasdfasdfasdfasdfadfasdfasdfasdfasdfasdfasdfasdfad2";
+        byte[] bytes = appendStr.getBytes();
+        GekkoEntry entry = GekkoEntry.builder().magic(0xCAFEDADD).term(123).data(bytes).build();
+        entry.computSizeInBytes();
+        for (int i = 0; i < 10000; i++) {
+            store.append(entry);
+
+        }
+
+        Assert.assertEquals(10000, store.getMaxIndex());
+        List<GekkoEntry> entryList0 = store.batchGetByIndex(1, 2);
+        Assert.assertEquals(1, entryList0.get(0).getEntryIndex());
+        Assert.assertEquals(1, entryList0.size());
+
+        List<GekkoEntry> entryList1 = store.batchGetByIndex(1, 10);
+        Assert.assertEquals(9, entryList1.size());
+
+        List<GekkoEntry> entryList2 = store.batchGetByIndex(1, 10001);
+        Assert.assertEquals(10000, entryList2.size());
+    }
+
+
+    @Test
+    public void testAppendAndBatchGet5() {
+        String dirPath = "/Users/zhengwei/Desktop/autorollfiles";
+        this.paths.add(dirPath);
+        GekkoConfig conf = GekkoConfig.builder().baseFilePath(dirPath).selfId("1").leaderId("1").storeType(StoreEnums.FILE).flushInterval(1).storeFileSize(1024 * 1024).indexCountPerFile(100000).osPageSize(1024 * 4).build();
+
+        NodeState nodeState = new NodeState(conf);
+        nodeState.init();
+        Store store = new FileStore(conf, nodeState);
+        store.init();
+        store.start();
+        String appendStr = "1sdfasdfasdfasdfasdfasdfasdfadf54545fasdfasdfasdfasdfasdfasdfadfa53345dfasdfasdfasdfasdfasdfasdfad9081nvsdfasdfasdfasdfasdfasdfadfasdfasdfasdfasdfasdfasdfasdfadfasdfasdfasdfasdfasdfasdfasdfad2";
+        byte[] bytes = appendStr.getBytes();
+        GekkoEntry entry = GekkoEntry.builder().magic(0xCAFEDADD).term(123).data(bytes).build();
+        entry.computSizeInBytes();
+        for (int i = 0; i < 1; i++) {
+            store.append(entry);
+
+        }
+
+        Assert.assertEquals(1, store.getMaxIndex());
+
+        List<GekkoEntry> entryList1 = store.batchGetByIndex(1, 2);
+        Assert.assertEquals(1, entryList1.size());
+
+    }
+    @Test
     public void testAppendAndBatchGet() {
         String dirPath = "/Users/zhengwei/Desktop/autorollfiles";
         this.paths.add(dirPath);
@@ -119,6 +212,10 @@ public class FileStoreTest extends BaseTest {
                 pos_99999 = entry.getPos();
             }
         }
+
+        Assert.assertEquals(100001, store.getMaxIndex());
+        List<GekkoEntry> entryList0 = store.batchGetByIndex(1, 100002);
+        Assert.assertEquals(100001, entryList0.size());
 
         Assert.assertTrue((pos_99999 - pos_66666) > 1024 * 1024);
 

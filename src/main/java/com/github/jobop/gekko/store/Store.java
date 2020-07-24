@@ -34,7 +34,7 @@ public interface Store extends LifeCycle {
     public GekkoEntry get(long offset, long length);
 
     public GekkoEntry getByIndex(long index);
-
+    //[fromIndex,toIndex)
     public List<GekkoEntry> batchGetByIndex(long fromIndex, long toIndex);
 
 

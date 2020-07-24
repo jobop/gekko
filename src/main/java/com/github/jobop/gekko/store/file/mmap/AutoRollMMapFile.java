@@ -331,7 +331,7 @@ public class AutoRollMMapFile implements ComposeMMapFile, SequenceFile, SlicedAb
                 if (remainingToselectSize < 0) {
                     buffers.add(file.selectMappedBuffer(posInFile, (int) (fileCanSelectSize + remainingToselectSize)));
                 } else {
-                    buffers.add(file.selectMappedBuffer(posInFile, (int) willSelectedSize));
+                    buffers.add(file.selectMappedBuffer(posInFile, (int) fileCanSelectSize));
                 }
                 break;
             } else {
