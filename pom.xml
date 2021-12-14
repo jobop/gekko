@@ -22,7 +22,7 @@
     <properties>
         <bolt.version>1.6.1</bolt.version>
         <hessian.version>3.3.6</hessian.version>
-        <log4j.version>2.2</log4j.version>
+        <log4j.version>2.16.0</log4j.version>
         <slf4j.version>1.7.21</slf4j.version>
         <disruptor.version>3.3.7</disruptor.version>
     </properties>
